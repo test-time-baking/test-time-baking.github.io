@@ -1,0 +1,179 @@
+---
+import { Icon } from "astro-icon/components";
+
+type Author = {
+  name: string;
+  url?: string;
+  institution?: string;
+  /** Superscript after the name, e.g. "*1,2". */
+  notes?: string[];
+};
+
+type Note = {
+  symbol: string;
+  text: string;
+};
+
+type Link = {
+  url: string;
+  name: string;
+  icon?: string;
+  /** Render as the filled, emphasised pill. */
+  primary?: boolean;
+};
+
+interface Props {
+  title: string;
+  /** Second line of the title, rendered smaller and in the text color. */
+  subtitle?: string;
+  authors: Author[];
+  /** Numbered affiliations, rendered as one line under the authors. */
+  affiliations?: string[];
+  conference?: string;
+  notes?: Note[];
+  links?: Link[];
+}
+
+const { title, subtitle, authors, affiliations, conference, notes, links } =
+  Astro.props;
+
+const hasBackground = Astro.slots.has("background");
+---
+
+<header
+  class:list={[
+    "full-bleed relative mb-8",
+    hasBackground && "-mt-16 pt-24 pb-28",
+  ]}
+>
+  {
+    hasBackground && (
+      <div class="cover absolute inset-0 z-0 overflow-hidden">
+        <slot name="background" />
+        {/* Darken the cover so the white header text stays legible. */}
+        <div class="absolute inset-0 bg-black/40" />
+      </div>
+    )
+  }
+  <div
+    class:list={[
+      "relative z-10 mx-auto flex max-w-[53rem] flex-col items-center px-6 text-center",
+      hasBackground
+        ? "gap-8 text-white prose-headings:text-white [text-shadow:0_0_8px_rgba(0,0,0,0.6)]"
+        : "gap-5",
+    ]}
+  >
+    <h1 class="my-0 leading-[1.1]">
+      <span
+        class:list={[
+          "block text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl",
+          hasBackground ? "text-white" : "text-nv",
+        ]}>{title}</span
+      >
+      {
+        subtitle && (
+          <span class="mt-3 block text-xl font-normal text-zinc-800 md:text-2xl">
+            {subtitle}
+          </span>
+        )
+      }
+    </h1>
+    <div class="not-prose flex flex-row flex-wrap justify-center gap-x-6 gap-y-1 text-lg">
+      {
+        authors.map((author) => (
+          <div class="flex flex-col items-center text-center">
+            <div class="flex flex-row">
+              {author.url ? (
+                <a
+                  class:list={[
+                    "no-underline hover:text-nv-ink",
+                    hasBackground && "text-blue-200 hover:text-blue-100",
+                  ]}
+                  href={author.url}
+                >
+                  {author.name}
+                </a>
+              ) : (
+                author.name
+              )}
+              {author.notes && (
+                <sup class="ml-0.5 text-sm text-zinc-500">
+                  {author.notes.map(
+                    (note, index, array) =>
+                      note + (index < array.length - 1 ? "," : ""),
+                  )}
+                </sup>
+              )}
+            </div>
+            {author.institution && <div>{author.institution}</div>}
+          </div>
+        ))
+      }
+    </div>
+    {
+      affiliations && (
+        <div class="not-prose -mt-2 flex flex-wrap justify-center gap-x-5 gap-y-1 text-sm text-zinc-600">
+          {affiliations.map((a, i) => (
+            <span>
+              <sup>{i + 1}</sup>
+              {a}
+            </span>
+          ))}
+        </div>
+      )
+    }
+    {
+      notes && (
+        <div class="not-prose -mt-3 text-center text-[13px] text-zinc-500">
+          {
+            // prettier-ignore
+            notes.map((note, index, array) => (
+              <span>
+                <sup>{note.symbol}</sup>{note.text}{index < array.length - 1 ? ", " : ""}
+              </span>
+            ))
+          }
+        </div>
+      )
+    }
+    {conference && <div class="not-prose font-bold">{conference}</div>}
+    {
+      links && (
+        <div class="not-prose flex flex-row flex-wrap justify-center">
+          <div class="inline-flex flex-row flex-wrap items-center justify-center gap-0.5 rounded-full bg-white/70 p-1.5 shadow-lg ring-1 ring-black/5 backdrop-blur-xl">
+            {links.map((link) => (
+              <a
+                href={link.url}
+                class:list={[
+                  "flex flex-row items-center gap-2 rounded-full px-4 py-1.5 text-base font-medium no-underline transition-colors",
+                  link.primary
+                    ? "bg-zinc-900 text-white hover:bg-black"
+                    : "text-zinc-800 hover:bg-black/10",
+                ]}
+              >
+                {link.icon && <Icon name={link.icon} class="h-[1.1em] w-[1.1em]" />}
+                <span>{link.name}</span>
+              </a>
+            ))}
+          </div>
+        </div>
+      )
+    }
+  </div>
+</header>
+
+<style>
+  /* Make the slotted cover (Picture/Video, or a plain <img>/<video>) fill the
+     header, overriding those components' figure styling. Scoped to `.cover`. */
+  .cover :global(:is(picture, img, video)) {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+    object-fit: cover;
+    border-radius: 0;
+  }
+</style>

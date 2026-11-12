@@ -1,0 +1,62 @@
+---
+/**
+ * Top bar in the style of NVIDIA Research lab pages: NVIDIA logo, lab name,
+ * "NVIDIA Research", and optional in-page anchor links on wide screens.
+ */
+interface NavLink {
+  label: string;
+  href: string;
+}
+
+interface Props {
+  labName: string;
+  labUrl: string;
+  links?: NavLink[];
+}
+
+const { labName, labUrl, links = [] } = Astro.props;
+
+const baseUrl = import.meta.env.BASE_URL;
+const prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
+---
+
+<nav
+  class="not-prose sticky top-0 z-30 w-full border-b border-zinc-200 bg-white/95 backdrop-blur"
+>
+  <div
+    class="mx-auto flex h-16 w-full max-w-[96rem] items-center gap-3 px-6 lg:px-10"
+  >
+    <a href="https://www.nvidia.com/" class="flex items-center no-underline">
+      <img
+        src={prefix + "nv-logo-black.webp"}
+        width="125"
+        height="24"
+        alt="NVIDIA"
+        decoding="async"
+      />
+    </a>
+    <div class="mx-1 h-6 w-px bg-zinc-300"></div>
+    <a
+      href={labUrl}
+      class="text-xs font-bold tracking-wide text-zinc-800 no-underline sm:text-sm md:text-base"
+      >{labName}</a
+    >
+    <div class="mx-1 hidden h-6 w-px bg-zinc-300 sm:block"></div>
+    <a
+      href="https://www.nvidia.com/en-us/research/"
+      class="hidden text-sm font-bold tracking-wide text-zinc-800 no-underline sm:block md:text-base"
+      >NVIDIA Research</a
+    >
+    {
+      links.length > 0 && (
+        <div class="ml-auto hidden gap-6 text-sm font-medium text-zinc-600 lg:flex">
+          {links.map((l) => (
+            <a class="no-underline hover:text-nv-ink" href={l.href}>
+              {l.label}
+            </a>
+          ))}
+        </div>
+      )
+    }
+  </div>
+</nav>

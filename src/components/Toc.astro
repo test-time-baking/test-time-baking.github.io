@@ -1,0 +1,106 @@
+---
+/**
+ * Sticky table of contents that floats in the left gutter on very wide
+ * screens, on the left edge of the page frame (like the Atlas blog). It is generated at runtime from the `h2`
+ * headings inside <main>, so it never has to be kept in sync by hand.
+ */
+interface Props {
+  paperUrl?: string;
+  paperLabel?: string;
+}
+
+const { paperUrl, paperLabel = "Read the paper" } = Astro.props;
+---
+
+<aside
+  id="page-toc"
+  class="not-prose pointer-events-none fixed top-28 z-20 hidden w-40 text-sm opacity-0 transition-opacity duration-200 [@media(min-width:1400px)]:block"
+  style="left: max(2.5rem, calc((100cqw - 96rem) / 2 + 2.5rem))"
+  aria-label="On this page"
+>
+  <ol id="page-toc-list" class="m-0 list-none p-0"></ol>
+  {
+    paperUrl && (
+      <a
+        href={paperUrl}
+        class="mt-4 ml-3.5 inline-block rounded-full bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white no-underline hover:bg-black"
+      >
+        {paperLabel}
+      </a>
+    )
+  }
+</aside>
+
+<script>
+  const list = document.getElementById("page-toc-list");
+  const heads = [...document.querySelectorAll<HTMLElement>("main h2[id]")];
+  if (list && heads.length) {
+    const links = heads.map((h) => {
+      const a = document.createElement("a");
+      a.href = "#" + h.id;
+      a.textContent = h.textContent ?? "";
+      a.className =
+        "block border-l-2 border-zinc-200 py-1 pl-3.5 text-zinc-500 no-underline hover:text-zinc-900";
+      const li = document.createElement("li");
+      li.appendChild(a);
+      list.appendChild(li);
+      return a;
+    });
+    const setActive = (id: string) => {
+      links.forEach((a) => {
+        const on = a.getAttribute("href") === "#" + id;
+        a.classList.toggle("border-nv", on);
+        a.classList.toggle("text-zinc-900", on);
+        a.classList.toggle("font-medium", on);
+        a.classList.toggle("border-zinc-200", !on);
+        a.classList.toggle("text-zinc-500", !on);
+      });
+    };
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((en) => {
+          if (en.isIntersecting) setActive((en.target as HTMLElement).id);
+        });
+      },
+      { rootMargin: "-20% 0px -70% 0px" },
+    );
+    heads.forEach((h) => io.observe(h));
+    setActive(heads[0].id);
+
+    // Fade the TOC out while a full-width stage (hero, demo, wide figure)
+    // passes behind it, so the two never overlap.
+    const toc = document.getElementById("page-toc")!;
+    const stages = [...document.querySelectorAll<HTMLElement>("[data-stage]")];
+    const check = () => {
+      if (toc.getClientRects().length === 0) return; // not rendered at this width
+      const r = toc.getBoundingClientRect();
+      // Keep the outline off the title block: show it only once the first
+      // section heading has scrolled up to where the outline sits.
+      const beforeContent = heads[0].getBoundingClientRect().top > r.top + 4;
+      const overlap = stages.some((s) => {
+        const b = s.getBoundingClientRect();
+        return b.bottom > r.top - 8 && b.top < r.bottom + 8 && b.left < r.right + 16;
+      });
+      const hide = beforeContent || overlap;
+      toc.classList.toggle("opacity-0", hide);
+      toc.classList.toggle("pointer-events-none", hide);
+    };
+    // Re-check on every frame in which the page moved (smooth scrolling,
+    // scroll restoration after a reload, layout shifts while media loads),
+    // plus a short settle period after load and after hash navigation.
+    let lastY = -1;
+    let lastH = -1;
+    let settleUntil = performance.now() + 4000;
+    const loop = () => {
+      if (scrollY !== lastY || innerHeight !== lastH || performance.now() < settleUntil) {
+        lastY = scrollY;
+        lastH = innerHeight;
+        check();
+      }
+      requestAnimationFrame(loop);
+    };
+    window.addEventListener("load", () => (settleUntil = performance.now() + 4000));
+    window.addEventListener("hashchange", () => (settleUntil = performance.now() + 1500));
+    loop();
+  }
+</script>

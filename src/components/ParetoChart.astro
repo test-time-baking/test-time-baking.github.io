@@ -1,0 +1,88 @@
+---
+import ChartCard from "./ChartCard.astro";
+
+/**
+ * PSNR against rendering speed on DL3DV at 960p (paper Table 1). Every method
+ * has one point per input-view count (16, 32, 64), joined by a line in that
+ * order. Coordinates are computed from the numbers, so the fps axis is a true
+ * log scale.
+ */
+type Point = [psnr: number, fps: number];
+
+const GREY = "#a1a1aa";
+const GREEN = "#76B900";
+
+const methods: { color: string; points: Point[] }[] = [
+  { color: GREY, points: [[22.18, 20], [22.24, 20], [21.96, 20]] }, // LVSM
+  { color: GREY, points: [[24.7, 10], [26.9, 10], [28.3, 10]] }, // LaCT
+  { color: GREY, points: [[26.86, 4], [29.13, 2], [31.11, 1]] }, // KV-cache (DVSM)
+  { color: GREEN, points: [[27.0, 23], [28.92, 23], [30.2, 23]] }, // TTB
+];
+/** TTB with local-duplicate inference at 64 views. */
+const duplicate: Point = [31.33, 23];
+const slowest: Point = [31.11, 1];
+
+const radii = [4, 6, 8];
+const xTicks = [22, 24, 26, 28, 30, 32];
+const yTicks = [1, 4, 10, 23];
+
+// Plot area: PSNR 22..32 on x = 80..490, 1..23 fps (log) on y = 252..42.
+const x = (psnr: number) => 80 + (psnr - 22) * 41;
+const y = (fps: number) => 252 - (210 * Math.log(fps)) / Math.log(23);
+const n = (v: number) => v.toFixed(1);
+const path = (pts: Point[]) => pts.map(([p, s]) => `${n(x(p))},${n(y(s))}`).join(" ");
+const last = methods[3].points[2];
+---
+
+<ChartCard
+  title="Quality versus rendering speed on DL3DV, 960p"
+  subtitle="Larger markers: more input views (16, 32, 64). Hollow: TTB with local-duplicate inference."
+>
+  <svg viewBox="0 0 520 300" role="img" aria-label="PSNR versus frames per second for LVSM, LaCT, the KV-cache baseline (DVSM) and TTB, each joined across 16, 32 and 64 input views">
+    <g stroke="#e4e4e7">
+      <line x1="50" y1="20" x2="50" y2="255"></line>
+      <line x1="50" y1="255" x2="500" y2="255"></line>
+    </g>
+    <g text-anchor="middle">
+      {xTicks.map((v) => <text x={n(x(v))} y="274">{v}</text>)}
+    </g>
+    <text x="285" y="294" text-anchor="middle">PSNR ↑</text>
+    <g text-anchor="end">
+      {yTicks.map((v) => <text x="42" y={n(y(v) + 4)}>{v}</text>)}
+    </g>
+    <text x="18" y="147" transform="rotate(-90 18 147)" text-anchor="middle">fps ↑ (log)</text>
+
+    {/* One line per method, through its 16-, 32- and 64-view points. */}
+    <g fill="none" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
+      {methods.map((m) => <polyline points={path(m.points)} stroke={m.color}></polyline>)}
+      <polyline points={path([last, duplicate])} stroke={GREEN} stroke-dasharray="4 3"></polyline>
+    </g>
+
+    {
+      methods.map((m) => (
+        <g fill={m.color}>
+          {m.points.map(([p, s], i) => <circle cx={n(x(p))} cy={n(y(s))} r={radii[i]}></circle>)}
+        </g>
+      ))
+    }
+    <circle cx={n(x(duplicate[0]))} cy={n(y(duplicate[1]))} r="8" fill="#fff" stroke={GREEN} stroke-width="2.5"></circle>
+
+    <text x="104" y="56" style="fill:#71717a">LVSM</text>
+    <text x="292" y="122" style="fill:#71717a">LaCT (TTT)</text>
+    <text x="250" y="228" style="fill:#71717a">KV-cache (DVSM)</text>
+    <text x="392" y="26" style="fill:#4f7d00" font-weight="600">TTB (ours)</text>
+
+    <defs>
+      <marker id="pareto-arrow" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+        <path d="M0 0L8 4L0 8z" fill="#18181b"></path>
+      </marker>
+    </defs>
+    <path
+      d={`M${n(x(slowest[0]))} ${n(y(slowest[1]) - 12)} L${n(x(slowest[0]))} 58`}
+      stroke="#18181b"
+      stroke-width="1.5"
+      fill="none"
+      marker-end="url(#pareto-arrow)"></path>
+    <text x={n(x(slowest[0]) - 9)} y="150" text-anchor="end" style="fill:#18181b" font-weight="700">23× faster</text>
+  </svg>
+</ChartCard>

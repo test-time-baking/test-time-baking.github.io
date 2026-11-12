@@ -1,0 +1,17 @@
+---
+/** Footer with the copyright line and the template credit required by its CC BY-SA license. */
+const baseUrl = import.meta.env.BASE_URL;
+const prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
+const year = new Date().getFullYear();
+---
+
+<footer class="not-prose mt-10 border-t border-zinc-200 py-7 text-[13px] text-zinc-500">
+  <div class="mx-auto flex max-w-[96rem] flex-wrap items-center gap-x-5 gap-y-3 px-6 lg:px-10">
+    <img src={prefix + "nv-logo-black.webp"} width="94" height="18" alt="NVIDIA" class="opacity-70" decoding="async" />
+    <span>© {year} NVIDIA Corporation</span>
+    <span class="hidden sm:inline">·</span>
+    <span>
+      Built with <a class="underline decoration-dotted underline-offset-4 hover:text-zinc-900" href="https://research-template.roman.technology" rel="nofollow">Roman Hauksson's project page template</a>, adapted from Eliahu Horwitz and Keunhong Park (CC BY-SA 4.0).
+    </span>
+  </div>
+</footer>

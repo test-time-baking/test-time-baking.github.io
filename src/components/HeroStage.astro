@@ -1,0 +1,117 @@
+---
+/**
+ * Full-width hero: one large looping fly-through with a strip of scene tiles
+ * underneath (Atlas-style stage, DVL-style tiles). Videos and posters live in
+ * /public so they are served as-is.
+ */
+interface HeroItem {
+  /** Path inside /public, e.g. "video/dl3dv-c-64.mp4". */
+  video: string;
+  /** Path inside /public, e.g. "video/posters/dl3dv-c-64.jpg". */
+  poster: string;
+  /** Tile label. */
+  label: string;
+  /** Text for the badge in the corner of the stage. */
+  badge: string;
+  /** Optional text for the caption pill (top right); falls back to the stage caption. */
+  caption?: string;
+}
+
+interface Props {
+  items: HeroItem[];
+  caption?: string;
+}
+
+const { items, caption = "Novel-view fly-through · TTB" } = Astro.props;
+const first = items[0];
+
+const baseUrl = import.meta.env.BASE_URL;
+const prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
+---
+
+<section class="hero-stage full-bleed not-prose mt-2 mb-14" data-stage>
+  <div class="mx-auto max-w-[75rem] px-6">
+    <div class="relative aspect-video overflow-hidden rounded-[20px] bg-black">
+      <video
+        class="hero-video h-full w-full object-cover"
+        src={prefix + first.video}
+        poster={prefix + first.poster}
+        autoplay
+        muted
+        loop
+        playsinline
+        preload="auto"></video>
+      <div
+        class="hero-caption absolute top-4 right-5 rounded-full bg-black/45 px-3 py-1.5 text-[13px] text-white backdrop-blur"
+      >
+        {first.caption ?? caption}
+      </div>
+      <div
+        class="absolute bottom-4 left-5 inline-flex items-center gap-2.5 rounded-full bg-black/55 px-3.5 py-2 text-sm font-medium text-white backdrop-blur"
+      >
+        <span class="h-2 w-2 rounded-full bg-nv"></span>
+        <span class="hero-badge">{first.badge}</span>
+      </div>
+    </div>
+    <div class="hero-tiles mt-4 flex flex-wrap justify-center gap-3">
+      {
+        items.map((it, i) => (
+          <button
+            type="button"
+            class:list={[
+              "tile relative aspect-video w-[168px] overflow-hidden rounded-[10px] border-[3px] bg-black p-0",
+              i === 0 ? "border-nv" : "border-transparent",
+            ]}
+            data-video={prefix + it.video}
+            data-badge={it.badge}
+            data-caption={it.caption ?? caption}
+            aria-pressed={i === 0 ? "true" : "false"}
+          >
+            <img
+              src={prefix + it.poster}
+              alt={it.label}
+              class="h-full w-full object-cover"
+              loading="lazy"
+              decoding="async"
+            />
+            <span class="absolute bottom-1.5 left-2 text-xs font-medium text-white [text-shadow:0_1px_2px_rgba(0,0,0,.8)]">
+              {it.label}
+            </span>
+          </button>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<script>
+  document.querySelectorAll<HTMLElement>(".hero-stage").forEach((root) => {
+    const video = root.querySelector<HTMLVideoElement>(".hero-video");
+    const badge = root.querySelector<HTMLElement>(".hero-badge");
+    const cap = root.querySelector<HTMLElement>(".hero-caption");
+    const tiles = [...root.querySelectorAll<HTMLButtonElement>(".tile")];
+    if (!video) return;
+    tiles.forEach((t) => {
+      t.addEventListener("click", () => {
+        tiles.forEach((x) => {
+          const on = x === t;
+          x.classList.toggle("border-nv", on);
+          x.classList.toggle("border-transparent", !on);
+          x.setAttribute("aria-pressed", on ? "true" : "false");
+        });
+        if (t.dataset.video && video.getAttribute("src") !== t.dataset.video) {
+          video.src = t.dataset.video;
+          video.play().catch(() => {});
+        }
+        if (badge && t.dataset.badge) badge.textContent = t.dataset.badge;
+        if (cap && t.dataset.caption) cap.textContent = t.dataset.caption;
+      });
+    });
+    // Some browsers block muted autoplay until the page is touched.
+    const nudge = () => video.play().catch(() => {});
+    nudge();
+    ["pointerdown", "keydown", "scroll", "touchstart"].forEach((ev) =>
+      window.addEventListener(ev, nudge, { once: true, passive: true }),
+    );
+  });
+</script>

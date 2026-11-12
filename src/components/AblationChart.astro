@@ -1,0 +1,31 @@
+---
+import ChartCard from "./ChartCard.astro";
+---
+
+<ChartCard
+  title="PSNR on DL3DV, 32 input views, small training setup"
+>
+  <svg viewBox="0 0 760 230" role="img" aria-label="Ablation from TTT to TTB: each change raises PSNR until full TTB passes DVSM">
+    <line x1="40" y1="190" x2="740" y2="190" stroke="#e4e4e7"></line>
+    <line x1="40" y1="84" x2="740" y2="84" stroke="#18181b" stroke-dasharray="4 4"></line>
+    <text x="46" y="76" style="fill:#18181b" font-weight="600">KV-cache 24.68 dB</text>
+    <g fill="#d4d4d8"><rect x="70" y="146" width="110" height="44" rx="4"></rect></g>
+    <g fill="#a1a1aa">
+      <rect x="230" y="118" width="110" height="72" rx="4"></rect>
+      <rect x="390" y="99" width="110" height="91" rx="4"></rect>
+    </g>
+    <g fill="#76B900"><rect x="550" y="72" width="110" height="118" rx="4"></rect></g>
+    <g text-anchor="middle" font-weight="600" style="fill:#18181b">
+      <text x="125" y="138" style="fill:#18181b">23.12</text>
+      <text x="285" y="110" style="fill:#18181b">23.78</text>
+      <text x="445" y="91" style="fill:#18181b">24.22</text>
+      <text x="605" y="64" style="fill:#18181b">24.84</text>
+    </g>
+    <g text-anchor="middle">
+      <text x="125" y="212">TTT (LaCT)</text>
+      <text x="285" y="212">+ context pairing</text>
+      <text x="445" y="212">+ MSE, T = 3</text>
+      <text x="605" y="212" style="fill:#4f7d00" font-weight="600">+ attention target</text>
+    </g>
+  </svg>
+</ChartCard>

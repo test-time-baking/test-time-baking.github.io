@@ -1,0 +1,74 @@
+---
+import { Font } from "astro:assets";
+
+import Table from "../components/Table.astro";
+import NvidiaNav from "../components/NvidiaNav.astro";
+import Toc from "../components/Toc.astro";
+import SiteFooter from "../components/SiteFooter.astro";
+
+import "../styles/global.css";
+import "katex/dist/katex-swap.css";
+
+import { Content, frontmatter } from "../paper.mdx";
+
+interface Frontmatter {
+  title: string;
+  description?: string;
+  favicon: string;
+  thumbnail?: string;
+  theme?: "device" | "light" | "dark";
+  paperUrl?: string;
+}
+
+const {
+  title,
+  description,
+  favicon,
+  thumbnail,
+  theme = "light",
+  paperUrl,
+} = frontmatter as Frontmatter;
+
+const baseUrl = import.meta.env.BASE_URL;
+const prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
+const site = Astro.site ? new URL(prefix, Astro.site).href : undefined;
+---
+
+<!doctype html>
+<html class="bg-white" lang="en" data-theme={theme}>
+  <head>
+    <meta charset="UTF-8" />
+    {description && <meta name="description" content={description} />}
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+
+    <link rel="icon" type="image/x-icon" href={prefix + favicon} />
+    {site && <link rel="canonical" href={site} />}
+
+    <meta property="og:title" content={title} />
+    {description && <meta property="og:description" content={description} />}
+    <meta property="og:type" content="website" />
+    {site && <meta property="og:url" content={site} />}
+    {thumbnail && <meta property="og:image" content={(site ?? prefix) + thumbnail} />}
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <Font cssVariable="--font-nvidia-sans" preload />
+
+    <title>{title}</title>
+  </head>
+  <body class="font-(family-name:--font-nvidia-sans) text-zinc-900">
+    <NvidiaNav
+      labName="NVIDIA Research Taiwan"
+      labUrl="https://research.nvidia.com/labs/twn/"
+    />
+    <Toc paperUrl={paperUrl} />
+    <div
+      class="prose prose-lg prose-zinc prose-headings:font-bold prose-headings:tracking-tight prose-a:text-nv-ink prose-a:hover:text-zinc-900 prose-a:underline prose-a:decoration-dashed prose-a:underline-offset-4 prose-a:hover:decoration-solid prose-a:font-normal prose-code:bg-zinc-200 prose-code:text-zinc-800 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:font-medium prose-code:before:content-none prose-code:after:content-none max-w-none pt-10 pb-6"
+    >
+      <main>
+        <Content components={{ table: Table }} />
+      </main>
+    </div>
+    <SiteFooter />
+  </body>
+</html>

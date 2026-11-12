@@ -1,0 +1,297 @@
+---
+/**
+ * Carousel of short clips in the style of the Nerfies/svraster results
+ * carousel: one slide centred, its neighbours peeking in at both edges,
+ * round arrow buttons, dots underneath, and it wraps around. Built on CSS
+ * scroll-snap, so it also swipes on touch screens. The wrap-around uses one
+ * clone at each end (the last clip before the first, the first after the
+ * last); when a clone comes to rest in the centre the track jumps, without
+ * animation, to the real slide. Only the centred clip plays (muted, looping);
+ * the rest sit dimmed on their posters until scrolled in, which keeps nine
+ * 20-30 MB recordings from loading at once. There are no browser controls:
+ * clicking the centred clip pauses and resumes it (a play badge shows while
+ * paused), a thin progress line runs along its bottom edge, and clicking a
+ * peeking neighbour brings it to the centre. Files live in /public.
+ */
+interface Item {
+  /** Path inside /public, e.g. "video/live-dl3dv-c.mp4". */
+  video: string;
+  /** Path inside /public, e.g. "video/posters/live-dl3dv-c.jpg". */
+  poster: string;
+  /** Short name: the slide's accessible name and tooltip (not drawn on the clip). */
+  label: string;
+  /** Optional second part of the tooltip, e.g. the dataset. */
+  note?: string;
+}
+
+interface Props {
+  items: Item[];
+  /** One line under the dots. */
+  caption?: string;
+}
+
+const { items, caption } = Astro.props;
+const n = items.length;
+
+// Real slides carry their index; the two clones carry the index they stand for.
+const slides = [
+  { ...items[n - 1], index: n - 1, clone: true },
+  ...items.map((it, i) => ({ ...it, index: i, clone: false })),
+  { ...items[0], index: 0, clone: true },
+];
+
+const baseUrl = import.meta.env.BASE_URL;
+const prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
+---
+
+<section class="clip-carousel full-bleed not-prose my-12 bg-zinc-100 py-8" data-stage>
+  <div class="relative mx-auto max-w-[96rem] px-6 lg:px-10">
+    {/* The track: snap-scrolling row. Its inline padding sets how much of the
+        neighbours peeks in (slide width = 100% - 2 * padding). */}
+    <div
+      class="track relative flex snap-x snap-mandatory gap-3 overflow-x-auto px-(--peek) [--peek:7.5%] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:[--peek:15%] lg:[--peek:25%]"
+      tabindex="0"
+      aria-roledescription="carousel"
+      aria-label="Live viewer recordings"
+    >
+      {
+        slides.map((s) => (
+          <div
+            class="slide relative w-full shrink-0 cursor-pointer snap-center overflow-hidden rounded-[10px] bg-black ring-1 ring-zinc-300"
+            data-index={s.index}
+            data-clone={s.clone ? "" : undefined}
+            aria-hidden={s.clone ? "true" : undefined}
+            aria-roledescription={s.clone ? undefined : "slide"}
+            aria-label={s.clone ? undefined : `${s.index + 1} of ${n}: ${s.label}`}
+            title={s.note ? `${s.label} · ${s.note}` : s.label}
+          >
+            <video
+              class="block aspect-video w-full"
+              src={prefix + s.video}
+              poster={prefix + s.poster}
+              muted
+              loop
+              playsinline
+              preload={s.index === 0 && !s.clone ? "metadata" : "none"}
+              tabindex={s.clone ? -1 : undefined}
+            />
+            {/* Shown only while the centred clip is paused. */}
+            <span class="play-badge pointer-events-none absolute top-1/2 left-1/2 h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-zinc-950 shadow-lg">
+              <svg viewBox="0 0 24 24" class="ml-1 h-6 w-6" fill="currentColor" aria-hidden="true">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </span>
+            {/* Progress line along the bottom edge of the centred clip. */}
+            <span class="bar pointer-events-none absolute inset-x-0 bottom-0 block h-0.5 bg-white/20">
+              <span class="fill block h-full w-0 bg-nv" />
+            </span>
+          </div>
+        ))
+      }
+    </div>
+
+    <button
+      type="button"
+      class="prev absolute top-1/2 left-3 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white text-zinc-800 shadow-md ring-1 ring-black/10 transition hover:bg-zinc-50 sm:left-8 lg:left-14"
+      aria-label="Previous clip"
+    >
+      <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="m15 6-6 6 6 6" />
+      </svg>
+    </button>
+    <button
+      type="button"
+      class="next absolute top-1/2 right-3 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white text-zinc-800 shadow-md ring-1 ring-black/10 transition hover:bg-zinc-50 sm:right-8 lg:right-14"
+      aria-label="Next clip"
+    >
+      <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="m9 6 6 6-6 6" />
+      </svg>
+    </button>
+
+    <div class="dots mt-4 flex items-center justify-center gap-1" role="tablist" aria-label="Clips">
+      {
+        items.map((it, i) => (
+          <button
+            type="button"
+            class="dot group flex h-6 w-5 items-center justify-center"
+            role="tab"
+            aria-label={it.label}
+            aria-selected={i === 0 ? "true" : "false"}
+          >
+            <span class="block h-2 w-2 rounded-full bg-zinc-300 transition group-hover:bg-zinc-400 group-aria-selected:scale-125 group-aria-selected:bg-zinc-900" />
+          </button>
+        ))
+      }
+    </div>
+    {caption && <p class="mt-2 text-center text-sm text-zinc-500">{caption}</p>}
+  </div>
+</section>
+
+<style>
+  .slide {
+    transition:
+      opacity 0.3s ease,
+      transform 0.3s ease;
+  }
+  .slide:not(.is-active) {
+    opacity: 0.6;
+    transform: scale(0.97);
+  }
+  .slide:not(.is-active) .bar,
+  .play-badge {
+    display: none;
+  }
+  .slide.is-active.is-paused .play-badge {
+    display: flex;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .slide {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>(".clip-carousel").forEach((root) => {
+    const track = root.querySelector<HTMLElement>(".track");
+    const slides = [...root.querySelectorAll<HTMLElement>(".slide")]; // clones included
+    const videos = slides.map((s) => s.querySelector("video")!);
+    const dots = [...root.querySelectorAll<HTMLButtonElement>(".dot")];
+    const prev = root.querySelector<HTMLButtonElement>(".prev");
+    const next = root.querySelector<HTMLButtonElement>(".next");
+    if (!track || slides.length < 3) return;
+
+    const last = slides.length - 1; // DOM index of the trailing clone
+    const realIndex = (d: number) => Number(slides[d].dataset.index);
+    const isClone = (d: number) => slides[d].hasAttribute("data-clone");
+
+    let current = -1; // DOM index of the centred slide
+    let inView = false;
+    let userPaused = false; // the viewer paused the centred clip
+
+    // Scroll position that centres DOM slide d (the track is the offset parent).
+    const leftFor = (d: number) =>
+      slides[d].offsetLeft - (track.clientWidth - slides[d].offsetWidth) / 2;
+    const goTo = (d: number, behavior: ScrollBehavior = "smooth") =>
+      track.scrollTo({ left: leftFor(Math.max(0, Math.min(last, d))), behavior });
+
+    // Which slide is nearest the centre right now?
+    const nearest = () => {
+      const mid = track.scrollLeft + track.clientWidth / 2;
+      let best = 0;
+      let bestDist = Infinity;
+      slides.forEach((s, d) => {
+        const dist = Math.abs(s.offsetLeft + s.offsetWidth / 2 - mid);
+        if (dist < bestDist) {
+          bestDist = dist;
+          best = d;
+        }
+      });
+      return best;
+    };
+
+    // Play the centred clip (never a clone), rest the others on their posters,
+    // and warm up the neighbours' metadata so the next swipe starts quickly.
+    const activate = (d: number) => {
+      if (d !== current) userPaused = false; // a new clip always starts playing
+      current = d;
+      const r = realIndex(d);
+      videos.forEach((v, k) => {
+        const active = k === d;
+        slides[k].classList.toggle("is-active", active);
+        slides[k].classList.toggle("is-paused", active && userPaused);
+        if (active && inView && !isClone(d) && !userPaused) {
+          v.play().catch(() => {});
+        } else {
+          if (!v.paused) v.pause();
+          if (Math.abs(k - d) === 1 && v.preload === "none") v.preload = "metadata";
+        }
+      });
+      dots.forEach((dot, k) => dot.setAttribute("aria-selected", k === r ? "true" : "false"));
+    };
+
+    // Click: the centred clip pauses/resumes, a peeking neighbour comes to the centre.
+    const togglePlay = () => {
+      if (current < 0) return;
+      userPaused = !userPaused;
+      slides[current].classList.toggle("is-paused", userPaused);
+      const v = videos[current];
+      if (userPaused) v.pause();
+      else v.play().catch(() => {});
+    };
+    slides.forEach((slide, d) =>
+      slide.addEventListener("click", () => {
+        if (d === current) togglePlay();
+        else goTo(d);
+      }),
+    );
+
+    // Progress line of the centred clip.
+    videos.forEach((v, k) => {
+      const fill = slides[k].querySelector<HTMLElement>(".fill");
+      v.addEventListener("timeupdate", () => {
+        if (fill && v.duration) fill.style.width = `${(v.currentTime / v.duration) * 100}%`;
+      });
+    });
+
+    // When a clone comes to rest in the centre, jump to the real slide.
+    const settle = () => {
+      const d = nearest();
+      if (d === 0) goTo(last - 1, "instant");
+      else if (d === last) goTo(1, "instant");
+      activate(nearest());
+    };
+    let settleTimer: number | undefined;
+    let ticking = false;
+    track.addEventListener(
+      "scroll",
+      () => {
+        if (!ticking) {
+          ticking = true;
+          requestAnimationFrame(() => {
+            ticking = false;
+            const d = nearest();
+            if (d !== current) activate(d);
+          });
+        }
+        window.clearTimeout(settleTimer);
+        settleTimer = window.setTimeout(settle, 150);
+      },
+      { passive: true },
+    );
+    track.addEventListener("scrollend", () => {
+      window.clearTimeout(settleTimer);
+      settle();
+    });
+
+    prev?.addEventListener("click", () => goTo(nearest() - 1));
+    next?.addEventListener("click", () => goTo(nearest() + 1));
+    dots.forEach((dot, k) => dot.addEventListener("click", () => goTo(k + 1)));
+    track.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowLeft") goTo(nearest() - 1);
+      else if (e.key === "ArrowRight") goTo(nearest() + 1);
+      else if (e.key === " " || e.key === "Enter") togglePlay();
+      else return;
+      e.preventDefault();
+    });
+
+    // Start centred on the first real clip; re-centre when the width changes.
+    goTo(1, "instant");
+    activate(1);
+    new ResizeObserver(() => {
+      if (current >= 0) goTo(current, "instant");
+    }).observe(track);
+
+    // Only play while the carousel is on screen.
+    const io = new IntersectionObserver(
+      (entries) => {
+        inView = entries.some((en) => en.isIntersecting);
+        if (inView) activate(nearest());
+        else if (current >= 0 && !videos[current].paused) videos[current].pause();
+      },
+      { threshold: 0.25 },
+    );
+    io.observe(root);
+  });
+</script>

@@ -1,0 +1,390 @@
+---
+/**
+ * Fly-through showcase in the Atlas "Input / Output" layout.
+ *
+ * Left: the real context views that were fed to the model, and a 3D view of
+ * their cameras together with the fly-through camera path (the camera of the
+ * frame currently shown is highlighted and follows the video). Right: the TTB
+ * fly-through along the scene's held-out camera path, with play/pause and a
+ * progress bar; the view-count switch swaps in the fly-through rendered from
+ * 16, 32 or 64 input views of the same scene and keeps the playback position.
+ * The videos are pre-rendered, so the stage offers no camera control.
+ *
+ * The stage carries almost no text on purpose: two panel labels and the
+ * view-count switch. Scene names and datasets are tooltips on the tiles;
+ * numbers belong in the section text above it.
+ *
+ * Media live in /public: videos and posters under /video, camera data under
+ * /traj (`<scene>-<views>.json` plus `ctx/<scene>/<frame>.jpg` thumbnails,
+ * produced by tools/dump_traj.py on the cluster).
+ */
+export interface DemoScene {
+  id: string;
+  label: string;
+  /** Dataset name, part of the tile's tooltip. */
+  set: string;
+  /** Poster used for the scene tile. */
+  poster: string;
+  /** Video path per input-view count, keyed by 2 / 16 / 32 / 64. */
+  videos: Partial<Record<2 | 16 | 32 | 64, string>>;
+  /** Square (1:1) renders and context views, e.g. RealEstate10K at 512×512. */
+  square?: boolean;
+}
+
+interface Props {
+  scenes: DemoScene[];
+  defaultViews?: 2 | 16 | 32 | 64;
+  totalFrames?: number;
+  caption?: string;
+}
+
+const {
+  scenes,
+  defaultViews = 64,
+  totalFrames = 360,
+  caption,
+} = Astro.props;
+
+const baseUrl = import.meta.env.BASE_URL;
+const prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
+const first = scenes[0];
+const firstVideo = first.videos[defaultViews] ?? first.videos[64]!;
+// The thumbnail grid shows at most 16 of the input views.
+const inputLabel = (v: number) => (v > 16 ? `Input · 16 of ${v} views` : `Input · ${v} views`);
+---
+
+<div
+  class="demo-stage not-prose my-4"
+  data-prefix={prefix}
+  data-scenes={JSON.stringify(scenes)}
+  data-default-views={defaultViews}
+  data-total-frames={totalFrames}
+>
+  <div class="mb-3.5 flex flex-wrap items-center gap-2.5">
+    <div class="seg views inline-flex rounded-full bg-zinc-100 p-1">
+      {
+        ([16, 32, 64] as const).map((k) => (
+          <button
+            type="button"
+            data-k={k}
+            class:list={[
+              "rounded-full px-3.5 py-1.5 text-sm font-medium text-zinc-600",
+              k === defaultViews && "bg-white text-zinc-900 shadow-sm",
+            ]}
+          >
+            {k} views
+          </button>
+        ))
+      }
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 gap-3 md:grid-cols-[minmax(300px,31%)_minmax(0,1fr)] md:items-stretch">
+    <div class="flex flex-col">
+      <div class="in-label mb-1.5 text-[13px] font-semibold text-nv-ink">
+        {inputLabel(defaultViews)}
+      </div>
+      <div class="flex flex-1 flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-100 p-2.5">
+        <div class="in-grid grid grid-cols-8 gap-1 md:grid-cols-4"></div>
+        <div class="traj relative mt-2.5 min-h-[240px] flex-1 overflow-hidden rounded-xl bg-white">
+          <div class="traj-canvas absolute inset-0 cursor-grab active:cursor-grabbing"></div>
+          <div class="traj-note pointer-events-none absolute inset-0 hidden items-center justify-center text-xs text-zinc-400">camera data unavailable</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="mb-1.5 text-[13px] font-semibold text-nv-ink">Output</div>
+      <div class="out-stage relative aspect-video overflow-hidden rounded-2xl bg-black">
+        <video
+          class="out-video h-full w-full object-cover"
+          src={prefix + firstVideo}
+          poster={prefix + first.poster}
+          muted
+          loop
+          playsinline
+          autoplay
+          preload="auto"></video>
+      </div>
+      <div class="mt-2 flex h-7 items-center gap-2.5 px-1">
+        <button type="button" class="play grid h-7 w-7 place-items-center rounded-full border border-zinc-200 bg-white p-0" aria-label="Play or pause">
+          <svg class="play-icon h-3 w-3" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"></path></svg>
+        </button>
+        <div class="bar relative h-[3px] flex-1 cursor-pointer rounded-sm bg-zinc-200">
+          <i class="fill absolute top-0 left-0 h-full w-0 rounded-sm bg-nv"></i>
+          <b class="knob absolute top-1/2 left-0 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-nv bg-white"></b>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {caption && <p class="mt-4 mb-2.5 text-center text-sm text-zinc-500">{caption}</p>}
+
+  <div
+    class="scene-tiles mx-auto mt-3 grid [grid-template-columns:repeat(var(--cols-sm),minmax(0,1fr))] gap-3 sm:[grid-template-columns:repeat(var(--cols),minmax(0,1fr))]"
+    style={`--cols: ${scenes.length}; --cols-sm: ${Math.ceil(scenes.length / 2)}; max-width: calc(${scenes.length} * 168px + ${scenes.length - 1} * 0.75rem)`}
+  >
+    {
+      scenes.map((s, i) => (
+        <button
+          type="button"
+          class:list={[
+            "tile relative aspect-video w-full overflow-hidden rounded-[10px] border-[3px] bg-black p-0",
+            i === 0 ? "border-nv" : "border-transparent",
+          ]}
+          data-scene={s.id}
+          aria-pressed={i === 0 ? "true" : "false"}
+          aria-label={`${s.label}, ${s.set}`}
+          title={`${s.label} · ${s.set}`}
+        >
+          <img src={prefix + s.poster} alt="" class="h-full w-full object-cover" loading="lazy" decoding="async" />
+        </button>
+      ))
+    }
+  </div>
+</div>
+
+<script>
+  import type { TrajData, TrajectoryViewer } from "../lib/trajectory-viewer";
+
+  type Views = 2 | 16 | 32 | 64;
+  interface Scene {
+    id: string;
+    label: string;
+    set: string;
+    poster: string;
+    videos: Partial<Record<Views, string>>;
+    square?: boolean;
+  }
+  // The thumbnail grid shows at most 16 of the input views.
+  const inputLabel = (v: number) => (v > 16 ? `Input · 16 of ${v} views` : `Input · ${v} views`);
+  const availableViews = (s: Scene) =>
+    (Object.keys(s.videos).map(Number) as Views[]).sort((a, b) => a - b);
+
+  document.querySelectorAll<HTMLElement>(".demo-stage").forEach((root) => {
+    const prefix = root.dataset.prefix ?? "/";
+    const scenes: Scene[] = JSON.parse(root.dataset.scenes ?? "[]");
+    const totalFrames = Number(root.dataset.totalFrames ?? 360);
+    let views = Number(root.dataset.defaultViews ?? 64) as Views;
+    let scene = scenes[0];
+
+    const video = root.querySelector<HTMLVideoElement>(".out-video")!;
+    const fill = root.querySelector<HTMLElement>(".fill")!;
+    const knob = root.querySelector<HTMLElement>(".knob")!;
+    const playBtn = root.querySelector<HTMLButtonElement>(".play")!;
+    const playIcon = root.querySelector<SVGElement>(".play-icon")!;
+    const bar = root.querySelector<HTMLElement>(".bar")!;
+    const inGrid = root.querySelector<HTMLElement>(".in-grid")!;
+    const inLabel = root.querySelector<HTMLElement>(".in-label")!;
+    const trajCanvas = root.querySelector<HTMLElement>(".traj-canvas")!;
+    const trajNote = root.querySelector<HTMLElement>(".traj-note")!;
+    const viewsSeg = root.querySelector<HTMLElement>(".views")!;
+    const viewButtons = [...root.querySelectorAll<HTMLButtonElement>(".views button")];
+    const tiles = [...root.querySelectorAll<HTMLButtonElement>(".scene-tiles .tile")];
+
+    const ICON_PLAY = '<path d="M6 4l14 8-14 8z"/>';
+    const ICON_PAUSE = '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>';
+
+    // three.js is loaded on demand, once the demo scrolls near. If WebGL is not
+    // available the 3D view degrades to a note and the rest of the demo keeps working.
+    let viewer: TrajectoryViewer | null = null;
+    const viewerReady = new Promise<TrajectoryViewer | null>((resolve) => {
+      const start = () =>
+        import("../lib/trajectory-viewer")
+          .then((m) => resolve(m.createTrajectoryViewer(trajCanvas)))
+          .catch(() => resolve(null));
+      if (!("IntersectionObserver" in window)) {
+        start();
+        return;
+      }
+      const io = new IntersectionObserver(
+        (entries) => {
+          if (entries.some((e) => e.isIntersecting)) {
+            io.disconnect();
+            start();
+          }
+        },
+        { rootMargin: "800px 0px" },
+      );
+      io.observe(root);
+    });
+    viewerReady.then((v) => (viewer = v));
+    let traj: TrajData | null = null;
+    let trajRequest = 0;
+
+    const thumbUrl = (sceneId: string, frame: number) => `${prefix}traj/ctx/${sceneId}/${frame}.jpg`;
+
+    function renderThumbs(data: TrajData | null) {
+      inGrid.innerHTML = "";
+      const frames = data ? data.context.slice(0, 16).map((c) => c.frame) : [];
+      const few = views <= 2;
+      inGrid.className = few
+        ? "in-grid grid grid-cols-2 gap-1.5"
+        : "in-grid grid grid-cols-8 gap-1 md:grid-cols-4";
+      frames.forEach((f) => {
+        const im = document.createElement("img");
+        im.src = thumbUrl(scene.id, f);
+        im.alt = "";
+        im.loading = "lazy";
+        im.className = `${scene.square ? "aspect-square" : "aspect-video"} w-full rounded-[3px] object-cover`;
+        inGrid.appendChild(im);
+      });
+      inLabel.textContent = inputLabel(views);
+    }
+
+    async function loadTraj() {
+      const id = ++trajRequest;
+      const sceneId = scene.id;
+      try {
+        const [res, v] = await Promise.all([fetch(`${prefix}traj/${sceneId}-${views}.json`), viewerReady]);
+        if (!res.ok) throw new Error(String(res.status));
+        const data = (await res.json()) as TrajData;
+        if (id !== trajRequest) return; // a newer request superseded this one
+        traj = data;
+        renderThumbs(data);
+        if (v) {
+          trajNote.classList.add("hidden");
+          trajNote.classList.remove("flex");
+          v.load(data, (f) => thumbUrl(sceneId, f));
+        } else {
+          trajNote.textContent = "3D view unavailable in this browser";
+          trajNote.classList.remove("hidden");
+          trajNote.classList.add("flex");
+        }
+        syncFrame(true);
+      } catch {
+        if (id !== trajRequest) return;
+        traj = null;
+        renderThumbs(null);
+        trajNote.textContent = "camera data unavailable";
+        trajNote.classList.remove("hidden");
+        trajNote.classList.add("flex");
+      }
+    }
+
+    function updateLabels() {
+      // Scenes with a single, non-standard setting (two-view RE10K) get no switch.
+      const switchable = availableViews(scene).some((k) => k >= 16);
+      viewsSeg.classList.toggle("hidden", !switchable);
+      video.classList.toggle("object-contain", Boolean(scene.square));
+      video.classList.toggle("object-cover", !scene.square);
+      viewButtons.forEach((b) => {
+        const k = Number(b.dataset.k) as Views;
+        const available = Boolean(scene.videos[k]);
+        b.disabled = !available;
+        b.classList.toggle("opacity-40", !available);
+        b.classList.toggle("cursor-not-allowed", !available);
+        const on = k === views;
+        b.classList.toggle("bg-white", on);
+        b.classList.toggle("text-zinc-900", on);
+        b.classList.toggle("shadow-sm", on);
+        b.classList.toggle("text-zinc-600", !on);
+      });
+    }
+
+    function loadVideo(keepTime: boolean) {
+      const t = keepTime ? video.currentTime : 0;
+      const wasPlaying = !video.paused;
+      const src = scene.videos[views]!;
+      video.src = prefix + src;
+      video.addEventListener(
+        "loadedmetadata",
+        () => {
+          video.currentTime = Math.min(t, Math.max(0, video.duration - 0.05));
+          if (wasPlaying) video.play().catch(() => {});
+        },
+        { once: true },
+      );
+      video.load();
+    }
+
+    function setScene(id: string) {
+      const s = scenes.find((x) => x.id === id);
+      if (!s) return;
+      scene = s;
+      if (!scene.videos[views]) {
+        const avail = availableViews(scene);
+        views = avail[avail.length - 1];
+      }
+      updateLabels();
+      loadVideo(false);
+      void loadTraj();
+      video.play().catch(() => {});
+    }
+
+    function setViews(k: Views) {
+      if (!scene.videos[k]) return;
+      views = k;
+      updateLabels();
+      loadVideo(true);
+      void loadTraj();
+    }
+
+    // --- playback, scrubbing and the 3D camera that follows the video ---------------
+    let lastFrame = -1;
+    function paint(f: number) {
+      fill.style.width = `${f * 100}%`;
+      knob.style.left = `${f * 100}%`;
+    }
+    function syncFrame(force = false) {
+      if (!video.duration) return;
+      const fps = traj?.fps ?? 30;
+      const n = traj?.frames ?? totalFrames;
+      const idx = Math.min(n - 1, Math.floor(video.currentTime * fps));
+      if (force || idx !== lastFrame) {
+        lastFrame = idx;
+        viewer?.setFrame(idx);
+        paint(video.currentTime / video.duration);
+      }
+    }
+    (function tick() {
+      syncFrame();
+      requestAnimationFrame(tick);
+    })();
+
+    const setPlayIcon = () => (playIcon.innerHTML = video.paused ? ICON_PLAY : ICON_PAUSE);
+    video.addEventListener("play", setPlayIcon);
+    video.addEventListener("pause", setPlayIcon);
+    playBtn.addEventListener("click", () => {
+      if (video.paused) video.play().catch(() => {});
+      else video.pause();
+    });
+
+    // The output itself takes no pointer input; only the progress bar seeks.
+    function scrubTo(clientX: number, el: HTMLElement) {
+      const r = el.getBoundingClientRect();
+      const f = Math.min(1, Math.max(0, (clientX - r.left) / r.width));
+      if (video.duration) video.currentTime = f * video.duration;
+      paint(f);
+      syncFrame(true);
+    }
+    bar.addEventListener("pointerdown", (e) => {
+      video.pause();
+      scrubTo(e.clientX, bar);
+    });
+
+    viewButtons.forEach((b) => b.addEventListener("click", () => setViews(Number(b.dataset.k) as Views)));
+    tiles.forEach((t) =>
+      t.addEventListener("click", () => {
+        tiles.forEach((x) => {
+          const on = x === t;
+          x.classList.toggle("border-nv", on);
+          x.classList.toggle("border-transparent", !on);
+          x.setAttribute("aria-pressed", on ? "true" : "false");
+        });
+        if (t.dataset.scene) setScene(t.dataset.scene);
+      }),
+    );
+
+    updateLabels();
+    renderThumbs(null);
+    void loadTraj();
+    setPlayIcon();
+    const nudge = () => {
+      if (video.paused && video.currentTime === 0) video.play().catch(() => {});
+    };
+    nudge();
+    ["pointerdown", "keydown", "scroll", "touchstart"].forEach((ev) =>
+      window.addEventListener(ev, nudge, { once: true, passive: true }),
+    );
+  });
+</script>

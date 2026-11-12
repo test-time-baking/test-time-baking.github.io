@@ -1,0 +1,32 @@
+---
+/**
+ * Card for one displayed equation (write the math in the default slot with
+ * KaTeX `$$ ... $$`). `ours` tints the card green.
+ */
+interface Props {
+  kicker: string;
+  note?: string;
+  ours?: boolean;
+}
+const { kicker, note, ours = false } = Astro.props;
+---
+
+<div
+  class:list={[
+    "eq-card rounded-2xl border px-5 py-4",
+    ours ? "border-nv bg-nv-soft" : "border-zinc-200 bg-white",
+  ]}
+>
+  <div
+    class:list={[
+      "text-[13px] font-semibold",
+      ours ? "text-nv-ink" : "text-zinc-500",
+    ]}
+  >
+    {kicker}
+  </div>
+  <div class="eq-body [&_.katex]:text-[0.95rem]">
+    <slot />
+  </div>
+  {note && <p class="m-0 text-sm text-zinc-600">{note}</p>}
+</div>

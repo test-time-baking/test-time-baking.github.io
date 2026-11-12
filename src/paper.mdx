@@ -1,0 +1,341 @@
+---
+# Browser-tab title and link-preview card. The on-page title is set on <TitleRow> below (it follows the teaser video, Atlas-style).
+title: "TTB: Test-time Baking for Efficient Rendering of Decoder-only View Synthesis Models"
+theme: light
+favicon: favicon.ico
+description: "Test-time Baking (TTB) bakes cross-view attention into a fast-weight MLP so decoder-only view synthesis models render novel views at a constant 23 fps, up to 23× faster than the KV-cache baseline at comparable quality. NeurIPS 2026 Spotlight."
+thumbnail: video/posters/ttb-teaser.jpg
+# Used by the floating table of contents.
+paperUrl: "#citation"
+---
+
+import TitleRow from "./components/TitleRow.astro";
+import TeaserVideo from "./components/TeaserVideo.astro";
+import ClipCarousel from "./components/ClipCarousel.astro";
+import DemoStage from "./components/DemoStage.astro";
+import StateSizeChart from "./components/StateSizeChart.astro";
+import ParetoChart from "./components/ParetoChart.astro";
+import AblationChart from "./components/AblationChart.astro";
+import EqCard from "./components/EqCard.astro";
+import Figure from "./components/Figure.astro";
+import Picture from "./components/Picture.astro";
+import Stage from "./components/Stage.astro";
+import ResultsTable from "./components/ResultsTable.astro";
+import VideoGallery from "./components/VideoGallery.astro";
+import LiveDemo from "./components/LiveDemo.astro";
+import SpeedCompare from "./components/SpeedCompare.astro";
+
+import figVariants from "./assets/figures/fig2-variants.png";
+import figPipeline from "./assets/figures/fig3-pipeline.png";
+
+<TeaserVideo
+  video="video/ttb-teaser.mp4"
+  poster="video/posters/ttb-teaser.jpg"
+  label="TTB teaser video (1 min, silent)"
+/>
+
+<TitleRow
+  title="Test-time Baking"
+  subtitle="for Efficient Rendering of Decoder-only View Synthesis Models"
+  conference="NeurIPS 2026 · Spotlight"
+  authors={[
+    { name: "Chin-Yang Lin", notes: ["*1,2"] },
+    { name: "Ryo Hachiuma", notes: ["1"] },
+    { name: "Jaesung Choe", notes: ["1"] },
+    { name: "Min-Hung Chen", notes: ["1"] },
+    { name: "Yu-Chiang Frank Wang", notes: ["1,3"] },
+    { name: "Yen-Yu Lin", notes: ["2"] },
+    { name: "Wei-Chen Chiu", notes: ["2"] },
+    { name: "Yu-Lun Liu", notes: ["2"] },
+    { name: "Cheng Sun", notes: ["1"] },
+  ]}
+  affiliations={[
+    "NVIDIA",
+    "National Yang Ming Chiao Tung University",
+    "National Taiwan University",
+  ]}
+  notes={[{ symbol: "*", text: "Work done during an internship at NVIDIA" }]}
+  links={[
+    { name: "arXiv", url: "#", icon: "academicons:arxiv" },
+    { name: "Code", url: "https://github.com/NVlabs/DVSM", icon: "ri:github-line" },
+    { name: "Demo", url: "https://huggingface.co/spaces/nvidia/DVSM", icon: "simple-icons:huggingface" },
+  ]}
+/>
+
+{/* TL;DR shares the title block's middle width, so both keep one left edge. */}
+<div class="mid-bleed">
+
+## TL;DR
+
+**Test-time Baking (TTB)** bakes the output of cross-view attention into a small fast-weight MLP, once per scene. Rendering then costs the same at any number of input views, at the quality of the KV-cache model it starts from.
+
+<details>
+<summary>Abstract</summary>
+
+Decoder-only Large View Synthesis Models (LVSMs) with KV-cache have recently achieved state-of-the-art quality by regressing novel views from neural networks without reconstructing 3D geometry, while Test-Time Training (TTT) layers save computation but sacrifice quality. We propose Test-Time Baking (TTB), a strategy that learns to bake global scene information from cross-view attention into a lightweight MLP, enabling fast and high-fidelity novel-view decoding. The first key is to repurpose the fast-weight MLP of TTT to learn the cross-view attention mapping explicitly from its input-output pairs, rather than replacing attention entirely, achieving the same rendering efficiency as TTT while delivering substantially higher quality. The second key addresses a modality misalignment between context prefilling and novel-view rendering: we disentangle context tokens into camera-only context rendering tokens to serve as TTB input, and context ground-truth tokens with image content to serve as the TTB mapping target, ensuring the baked MLPs are relieved of the modality generalization challenge between context and novel-view processing. Our method achieves up to 23× rendering speedup with quality on par with the state of the art across several benchmarks.
+
+</details>
+
+</div>
+
+<ClipCarousel
+  caption="Live viewer recordings · 64 input views"
+  items={[
+    { video: "video/live-dl3dv-c.mp4", poster: "video/posters/live-dl3dv-c.jpg", label: "Fountain", note: "DL3DV" },
+    { video: "video/live-dl3dv-a.mp4", poster: "video/posters/live-dl3dv-a.jpg", label: "Flower bed", note: "DL3DV" },
+    { video: "video/live-dl3dv-f.mp4", poster: "video/posters/live-dl3dv-f.jpg", label: "Cathedral plaza", note: "DL3DV" },
+    { video: "video/live-dl3dv-i.mp4", poster: "video/posters/live-dl3dv-i.jpg", label: "Domed church", note: "DL3DV" },
+    { video: "video/live-dl3dv-g.mp4", poster: "video/posters/live-dl3dv-g.jpg", label: "Dinosaur hall", note: "DL3DV" },
+    { video: "video/live-dl3dv-h.mp4", poster: "video/posters/live-dl3dv-h.jpg", label: "Classic cars", note: "DL3DV" },
+    { video: "video/live-m360-bicycle.mp4", poster: "video/posters/live-m360-bicycle.jpg", label: "Bicycle", note: "Mip-NeRF 360, zero-shot" },
+    { video: "video/live-hike-forest2.mp4", poster: "video/posters/live-hike-forest2.jpg", label: "Forest trail", note: "Hike, zero-shot, keyboard walk" },
+  ]}
+/>
+
+## Novel view synthesis
+
+Each DL3DV scene is rendered from its input photos along a smooth orbiting path of novel views, using only the baked fast weights. More input views raise quality (27.0, 28.9 and 30.2 dB on DL3DV at 16, 32 and 64 views); render time stays at 43 ms per 960p frame (23 fps).
+
+<Stage width="full">
+  <DemoStage
+    defaultViews={64}
+    scenes={[
+      { id: "orb-topiary", label: "Topiary sculpture", set: "DL3DV", poster: "video/posters/orb-topiary-64.jpg",
+        videos: { 16: "video/orb-topiary-16.mp4", 32: "video/orb-topiary-32.mp4", 64: "video/orb-topiary-64.mp4" } },
+      { id: "orb-castle", label: "Castle ride", set: "DL3DV", poster: "video/posters/orb-castle-64.jpg",
+        videos: { 16: "video/orb-castle-16.mp4", 32: "video/orb-castle-32.mp4", 64: "video/orb-castle-64.mp4" } },
+      { id: "orb-kiosk", label: "Park pavilion", set: "DL3DV", poster: "video/posters/orb-kiosk-64.jpg",
+        videos: { 16: "video/orb-kiosk-16.mp4", 32: "video/orb-kiosk-32.mp4", 64: "video/orb-kiosk-64.mp4" } },
+      { id: "orb-airport", label: "Airport kiosk", set: "DL3DV", poster: "video/posters/orb-airport-64.jpg",
+        videos: { 16: "video/orb-airport-16.mp4", 32: "video/orb-airport-32.mp4", 64: "video/orb-airport-64.mp4" } },
+      { id: "orb-fitness", label: "Fitness park", set: "DL3DV", poster: "video/posters/orb-fitness-64.jpg",
+        videos: { 16: "video/orb-fitness-16.mp4", 32: "video/orb-fitness-32.mp4", 64: "video/orb-fitness-64.mp4" } },
+      { id: "orb-terrace", label: "Terrace lounge", set: "DL3DV", poster: "video/posters/orb-terrace-64.jpg",
+        videos: { 16: "video/orb-terrace-16.mp4", 32: "video/orb-terrace-32.mp4", 64: "video/orb-terrace-64.mp4" } },
+    ]}
+  />
+</Stage>
+
+## Live demo
+
+The [Hugging Face Space](https://huggingface.co/spaces/nvidia/DVSM) runs the whole pipeline on one GPU: upload 16–128 photos or a short video, [π³](https://github.com/yyfz/Pi3) estimates the poses, TTB bakes the scene, and the viewer streams freshly rendered frames as you move.
+
+<Stage width="mid">
+  <LiveDemo
+    video="video/live-demo.mp4"
+    poster="video/posters/live-demo.jpg"
+    href="https://huggingface.co/spaces/nvidia/DVSM"
+  />
+</Stage>
+
+## Rendering speed
+
+TTB renders at a constant 23 fps at any number of input views, while a KV-cache model slows to about 1 fps at 64 views.
+
+### Why the KV-cache slows down
+
+Feed-forward view synthesis **reconstructs** a scene once, then **renders** many novel views from that state. A KV-cache model stores the scene as the keys and values of every input token, and every frame attends to all of it: more views, slower frames. TTB bakes the scene into fixed-size fast weights instead, so a frame costs the same at any number of views.
+
+<StateSizeChart />
+
+### Real-time comparison
+
+TTB starts from a KV-cache model (DVSM) and keeps its cross-view attention for reconstruction, so the two render nearly the same image from the same views (under 1 dB apart on DL3DV). The difference is frame time. Both fly the same camera path **in real time**, each showing its newest finished frame: at 64 views the KV-cache manages about 1 fps, TTB 23. At 16 views the KV-cache reaches 4 fps; TTB stays at 23.
+
+<Stage width="full">
+  <SpeedCompare
+    defaultViews={64}
+    slowFps={{ 16: 4, 32: 2, 64: 1 }}
+    fastFps={23.2558}
+    slowLabel="KV-cache"
+    fastLabel="TTB"
+    caption="Simulated from offline renders, timed with the paper's measured render speeds."
+    scenes={[
+      { id: "dl3dv-l", label: "Floral mannequins", set: "DL3DV", poster: "video/posters/dl3dv-l-64.jpg", panelPoster: "video/posters/cmp-dl3dv-l-64.jpg",
+        videos: { 16: "video/cmp-dl3dv-l-16.mp4", 32: "video/cmp-dl3dv-l-32.mp4", 64: "video/cmp-dl3dv-l-64.mp4" } },
+      { id: "dl3dv-k", label: "Golden shrine", set: "DL3DV", poster: "video/posters/dl3dv-k-64.jpg", panelPoster: "video/posters/cmp-dl3dv-k-64.jpg",
+        videos: { 16: "video/cmp-dl3dv-k-16.mp4", 32: "video/cmp-dl3dv-k-32.mp4", 64: "video/cmp-dl3dv-k-64.mp4" } },
+      { id: "dl3dv-m", label: "Fruit stand", set: "DL3DV", poster: "video/posters/dl3dv-m-64.jpg", panelPoster: "video/posters/cmp-dl3dv-m-64.jpg",
+        videos: { 16: "video/cmp-dl3dv-m-16.mp4", 32: "video/cmp-dl3dv-m-32.mp4", 64: "video/cmp-dl3dv-m-64.mp4" } },
+      { id: "dl3dv-n", label: "Dolphin ride", set: "DL3DV", poster: "video/posters/dl3dv-n-64.jpg", panelPoster: "video/posters/cmp-dl3dv-n-64.jpg",
+        videos: { 16: "video/cmp-dl3dv-n-16.mp4", 32: "video/cmp-dl3dv-n-32.mp4", 64: "video/cmp-dl3dv-n-64.mp4" } },
+    ]}
+  />
+</Stage>
+
+## Method
+
+### Baking attention into fast weights
+
+A Test-Time Training (TTT) layer trains its fast weights $\theta$ so an MLP maps keys to values, replacing attention. TTB keeps cross-view attention during reconstruction and changes only the inner loop's **target**: the MLP learns to reproduce the **attention output**. After prefilling the KV-cache is dropped and only the baked weights remain, so rendering costs exactly what TTT costs, with far more scene information in the weights.
+
+<Stage>
+<div class="grid gap-4">
+  <EqCard kicker="TTT (LaCT)" note="The target is a linear projection of the input tokens.">
+
+$$
+\theta \leftarrow \theta - \eta\,\nabla_{\theta}\,\mathcal{L}\big(f_{\theta}(W_k X),\; W_v X\big)
+$$
+
+  </EqCard>
+  <EqCard kicker="TTB (ours)" ours note="The target is the cross-view attention output, which already aggregates all context views.">
+
+$$
+\theta \leftarrow \theta - \eta\,\nabla_{\theta}\,\mathcal{L}\big(f_{\theta}(W_k X),\; \textcolor{#4f7d00}{\mathrm{CrossAttn}(X^{*})}\big)
+$$
+
+  </EqCard>
+</div>
+</Stage>
+
+Saliency shows the difference: a linear-projection target peaks on one context view, the attention target draws on many.
+
+<Stage width="mid">
+  <Figure>
+    <Picture slot="figure" src={figVariants} alt="Three variants of the inner-loop optimisation and t-SNE plots of their token features" />
+    <Fragment slot="caption">**Three inner-loop variants.** (a) TTT learns from raw value tokens. (b) TTB without context pairing targets the attention output. (c) Full TTB also pairs each context view; only (c) aligns context and novel-view token modalities from the first block.</Fragment>
+  </Figure>
+</Stage>
+
+### Context pairing
+
+Context tokens carry **RGB and pose**; novel-view tokens carry **pose only**. TTB splits each context view into a camera-only *rendering* token (the MLP input) and a ground-truth token with image content (the attention target).
+
+$$
+X^{(\text{ctx-gt})}_0 = \mathrm{LN}\big(\mathrm{PE}^{(\text{ray})}(P, K) + \mathrm{PE}^{(\text{rgb})}(I)\big), \qquad
+X^{(\text{ctx-rend})}_0 = \mathrm{LN}\big(\mathrm{PE}^{(\text{ray})}(P, K)\big)
+$$
+
+Each TTB layer bakes the map $X^{(\text{ctx-rend})} \mapsto \mathrm{CrossAttn}(X^{(\text{ctx-gt})})$ and shares the baked MLP with the novel-view tokens, so both stages see the same modality. Reconstruction handles twice the tokens; rendering cost is unchanged.
+
+<Stage width="mid">
+  <Figure>
+    <Picture slot="figure" src={figPipeline} alt="TTB pipeline: intra-view attention, FFN, test-time baking layer and FFN, repeated L times" />
+    <Fragment slot="caption">**Pipeline.** Each block: intra-view attention, FFN, TTB layer, FFN. Reconstruction bakes the fast-weight MLP once per scene; rendering retrieves scene information from it in $O(1)$. The rendering loss back-propagates through the baking, so training is end to end.</Fragment>
+  </Figure>
+</Stage>
+
+## Benchmarks
+
+DL3DV at 960p: a constant 23 fps at 16, 32 and 64 input views, 23× faster than the KV-cache baseline (DVSM) and 2.3× faster than LaCT (TTT). TTB matches the KV-cache at 16 views and stays within 0.2 dB at 32; with local-duplicate inference it passes it at 64 views (31.33 vs 31.11 dB) at the same speed.
+
+<Stage>
+  <div class="mx-auto max-w-[36rem]">
+    <ParetoChart />
+  </div>
+  <div class="mt-6">
+    <ResultsTable
+      title="DL3DV · 960p"
+      defaultKey="64"
+      note="140 held-out DL3DV scenes. Recon: per-scene reconstruction time."
+      settings={[
+        { key: "16", label: "16", rows: [
+          { method: "3DGS", venue: "ToG'23", psnr: 21.20, ssim: 0.708, lpips: 0.264, recon: ">600 s", fps: ">50" },
+          { method: "LongLRM", venue: "ICCV'25", psnr: 22.66, ssim: 0.740, lpips: 0.292, recon: "0.4 s", fps: ">50" },
+          { method: "LongLRM++", venue: "arXiv'25", psnr: 24.40, ssim: 0.795, lpips: 0.231, recon: "1.6 s", fps: "14" },
+          { method: "tttLRM", venue: "CVPR'26", psnr: 23.60, ssim: 0.784, lpips: 0.255, recon: "3.6 s" },
+          { method: "LVSM", venue: "ICLR'25", psnr: 22.18, ssim: 0.694, lpips: 0.351, recon: "3.8 s", fps: "20" },
+          { method: "LaCT", venue: "ICLR'26", psnr: 24.70, ssim: 0.793, lpips: 0.224, recon: "1.9 s", fps: "10" },
+          { method: "DVSM", venue: "arXiv'26", psnr: 26.86, ssim: 0.852, lpips: 0.170, recon: "4.4 s", fps: "4" },
+          { method: "TTB--", psnr: 26.26, ssim: 0.833, lpips: 0.191, recon: "1.9 s", fps: "23", ours: true },
+          { method: "TTB", psnr: 27.00, ssim: 0.849, lpips: 0.177, recon: "5.4 s", fps: "23", ours: true },
+        ] },
+        { key: "32", label: "32", rows: [
+          { method: "3DGS", venue: "ToG'23", psnr: 23.60, ssim: 0.779, lpips: 0.213, recon: ">600 s", fps: ">50" },
+          { method: "LongLRM", venue: "ICCV'25", psnr: 24.10, ssim: 0.783, lpips: 0.254, recon: "1 s", fps: ">50" },
+          { method: "LongLRM++", venue: "arXiv'25", psnr: 26.43, ssim: 0.846, lpips: 0.180, recon: "4.7 s", fps: "14" },
+          { method: "tttLRM", venue: "CVPR'26", psnr: 25.07, ssim: 0.822, lpips: 0.215, recon: "7.2 s" },
+          { method: "LVSM", venue: "ICLR'25", psnr: 22.24, ssim: 0.691, lpips: 0.352, recon: "15 s", fps: "20" },
+          { method: "LaCT", venue: "ICLR'26", psnr: 26.90, ssim: 0.837, lpips: 0.185, recon: "3.7 s", fps: "10" },
+          { method: "DVSM", venue: "arXiv'26", psnr: 29.13, ssim: 0.893, lpips: 0.129, recon: "15 s", fps: "2" },
+          { method: "TTB--", psnr: 28.12, ssim: 0.867, lpips: 0.158, recon: "3.7 s", fps: "23", ours: true },
+          { method: "TTB", psnr: 28.92, ssim: 0.882, lpips: 0.145, recon: "18 s", fps: "23", ours: true },
+          { method: "TTB (duplicate)", psnr: 29.26, ssim: 0.890, lpips: 0.136, recon: "18 s", fps: "23", ours: true },
+        ] },
+        { key: "64", label: "64 views", rows: [
+          { method: "3DGS", venue: "ToG'23", psnr: 26.43, ssim: 0.854, lpips: 0.167, recon: ">600 s", fps: ">50" },
+          { method: "LongLRM", venue: "ICCV'25", psnr: 24.77, ssim: 0.804, lpips: 0.239, recon: "3 s", fps: ">50" },
+          { method: "LongLRM++", venue: "arXiv'25", psnr: 27.30, ssim: 0.869, lpips: 0.161, recon: "16 s", fps: "14" },
+          { method: "tttLRM", venue: "CVPR'26", psnr: 25.95, ssim: 0.844, lpips: 0.195, recon: "15 s" },
+          { method: "LVSM", venue: "ICLR'25", psnr: 21.96, ssim: 0.678, lpips: 0.364, recon: "59 s", fps: "20" },
+          { method: "LaCT", venue: "ICLR'26", psnr: 28.30, ssim: 0.857, lpips: 0.169, recon: "7.3 s", fps: "10" },
+          { method: "DVSM", venue: "arXiv'26", psnr: 31.11, ssim: 0.920, lpips: 0.104, recon: "60 s", fps: "1" },
+          { method: "TTB--", psnr: 29.29, ssim: 0.882, lpips: 0.144, recon: "7.5 s", fps: "23", ours: true },
+          { method: "TTB", psnr: 30.20, ssim: 0.897, lpips: 0.131, recon: "65 s", fps: "23", ours: true },
+          { method: "TTB (duplicate)", psnr: 31.33, ssim: 0.919, lpips: 0.108, recon: "65 s", fps: "23", ours: true },
+        ] },
+      ]}
+    />
+  </div>
+</Stage>
+
+TTB-- uses a linear-projection target instead of attention, so reconstruction stays linear in the number of views; it matches LaCT's quality with fewer parameters and faster rendering.
+
+
+### Zero-shot generalization
+
+Trained on DL3DV only, TTB transfers to Mip-NeRF 360, Free and Hike at the same speed, and beats LagerNVS, a recent multi-dataset VGGT-based model, by a wide margin at 3.1–9.5× faster rendering. Hover a scene to play it.
+
+<Stage width="mid">
+  <VideoGallery
+    items={[
+      { src: "video/m360-bonsai-64.mp4", poster: "video/posters/m360-bonsai-64.jpg", label: "Mip-NeRF 360" },
+      { src: "video/free-stair-64.mp4", poster: "video/posters/free-stair-64.jpg", label: "Free" },
+      { src: "video/hike-university2-64.mp4", poster: "video/posters/hike-university2-64.jpg", label: "Hike" },
+    ]}
+  />
+</Stage>
+
+| Method | Mip-NeRF 360 PSNR ↑ | SSIM ↑ | LPIPS ↓ | Free PSNR ↑ | SSIM ↑ | LPIPS ↓ | Hike PSNR ↑ | SSIM ↑ | LPIPS ↓ | Recon ↓ | FPS ↑ |
+| :--- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| LVSM | 20.07 | 0.459 | 0.559 | 20.27 | 0.517 | 0.444 | 18.60 | 0.433 | 0.502 | 59 s | 20 |
+| LaCT | 23.01 | 0.557 | 0.435 | 24.61 | 0.680 | 0.265 | 22.39 | 0.648 | 0.305 | **7.3 s** | 10 |
+| DVSM | 24.76 | 0.660 | **0.337** | 25.57 | 0.756 | 0.205 | 23.10 | 0.697 | 0.262 | 60 s | 1 |
+| **TTB--** | 23.93 | 0.597 | 0.397 | 25.28 | 0.708 | 0.253 | 22.53 | 0.660 | 0.300 | 7.5 s | **23** |
+| **TTB** | 24.49 | 0.624 | 0.375 | 26.05 | 0.744 | 0.225 | 23.77 | 0.707 | 0.259 | 65 s | **23** |
+| **TTB (duplicate)** | **25.05** | **0.667** | 0.341 | **26.82** | **0.800** | **0.187** | **25.37** | **0.782** | **0.195** | 65 s | **23** |
+
+<p class="text-center text-sm text-zinc-500">64 input views at 960p.</p>
+
+## Ablation
+
+Three additive changes turn a TTT replacement into TTB: context pairing, an MSE inner loop with three steps, and the cross-view attention target. Together they close the gap to the KV-cache model at TTT's rendering speed.
+
+<AblationChart />
+
+<details>
+<summary>Inner-loop and layer-design ablations</summary>
+
+| Framework | T | Loss | PSNR ↑ | SSIM ↑ | LPIPS ↓ |
+| :--- | :---: | :--- | ---: | ---: | ---: |
+| TTT | 1 | dot-prod | 23.12 | 0.704 | 0.286 |
+| TTT | 3 | MSE | 23.39 | 0.715 | 0.277 |
+| TTB-- | 1 | dot-prod | 23.78 | 0.728 | 0.264 |
+| TTB-- | 2 | MSE | 24.16 | 0.744 | 0.251 |
+| TTB-- | 3 | MSE | 24.22 | 0.747 | 0.248 |
+| TTB-- | 5 | MSE | **24.29** | **0.751** | **0.246** |
+
+MSE beats the dot-product loss for both TTT and TTB--; more inner-loop steps give diminishing gains, and $T = 3$ is the sweet spot.
+
+| Feedback | Residual | PSNR ↑ | SSIM ↑ | LPIPS ↓ |
+| :---: | :---: | ---: | ---: | ---: |
+| ✗ | ✗ | 24.32 | 0.748 | 0.243 |
+| ✗ | ✓ | 24.75 | 0.764 | 0.233 |
+| ✓ | ✗ | 24.76 | 0.764 | 0.231 |
+| ✓ | ✓ | **24.84** | **0.768** | **0.230** |
+
+Residual learning and feedback each add about +0.4 dB; together +0.5 dB.
+
+</details>
+
+
+## Citation
+
+```bibtex
+@inproceedings{lin2026ttb,
+  title     = {TTB: Test-time Baking for Efficient Rendering of Decoder-only View Synthesis Models},
+  author    = {Lin, Chin-Yang and Hachiuma, Ryo and Choe, Jaesung and Chen, Min-Hung and Wang, Yu-Chiang Frank and Lin, Yen-Yu and Chiu, Wei-Chen and Liu, Yu-Lun and Sun, Cheng},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2026}
+}
+```

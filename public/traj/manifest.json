@@ -1,0 +1,50 @@
+{
+ "dl3dv-a-16": {
+  "context": 16,
+  "heldout": 50,
+  "pathLength": 96.2225,
+  "json_kb": 38.2
+ },
+ "dl3dv-a-32": {
+  "context": 32,
+  "heldout": 50,
+  "pathLength": 96.2225,
+  "json_kb": 40.5
+ },
+ "dl3dv-a-64": {
+  "context": 64,
+  "heldout": 50,
+  "pathLength": 96.2225,
+  "json_kb": 44.9
+ },
+ "dl3dv-c-64": {
+  "context": 64,
+  "heldout": 44,
+  "pathLength": 49.8164,
+  "json_kb": 44.7
+ },
+ "dl3dv-e-64": {
+  "context": 64,
+  "heldout": 52,
+  "pathLength": 49.3675,
+  "json_kb": 45.1
+ },
+ "m360-garden-16": {
+  "context": 16,
+  "heldout": 24,
+  "pathLength": 136.7172,
+  "json_kb": 38.0
+ },
+ "m360-garden-64": {
+  "context": 64,
+  "heldout": 24,
+  "pathLength": 136.7172,
+  "json_kb": 44.5
+ },
+ "free-hydrant-64": {
+  "context": 64,
+  "heldout": 19,
+  "pathLength": 19.8289,
+  "json_kb": 44.6
+ }
+}

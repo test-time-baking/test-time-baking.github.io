@@ -1,0 +1,131 @@
+---
+/**
+ * Benchmark table with a switch between input-view settings. One table is
+ * rendered per setting at build time; the switch only toggles visibility.
+ * Best value per column is bolded; rows marked `ours` are tinted green.
+ */
+export interface Row {
+  method: string;
+  venue?: string;
+  psnr?: number;
+  ssim?: number;
+  lpips?: number;
+  /** Reconstruction (prefill) time, free text such as "4.4 s" or ">600 s". */
+  recon?: string;
+  /** Rendering speed, free text such as "23" or ">50". */
+  fps?: string;
+  ours?: boolean;
+}
+
+interface Props {
+  title: string;
+  settings: { key: string; label: string; rows: Row[] }[];
+  defaultKey?: string;
+  note?: string;
+}
+
+const { title, settings, defaultKey = settings[settings.length - 1].key, note } = Astro.props;
+
+const fmt = (v: number | undefined, d: number) => (v === undefined ? "–" : v.toFixed(d));
+const best = (rows: Row[], key: "psnr" | "ssim" | "lpips") => {
+  const vals = rows.map((r) => r[key]).filter((v): v is number => v !== undefined);
+  if (!vals.length) return undefined;
+  return key === "lpips" ? Math.min(...vals) : Math.max(...vals);
+};
+// Bold marks the best value of every column: highest PSNR, SSIM and FPS,
+// lowest LPIPS and reconstruction time. Ties are all bold.
+const num = (v?: string) => parseFloat((v ?? "").replace(/[^0-9.]/g, ""));
+const bestFps = (rows: Row[]) => {
+  const vals = rows.map((r) => num(r.fps)).filter((v) => !Number.isNaN(v));
+  return vals.length ? Math.max(...vals) : undefined;
+};
+const bestRecon = (rows: Row[]) => {
+  const vals = rows.map((r) => num(r.recon)).filter((v) => !Number.isNaN(v));
+  return vals.length ? Math.min(...vals) : undefined;
+};
+---
+
+<div class="results-table not-prose my-4 overflow-hidden rounded-2xl border border-zinc-200">
+  <div class="flex flex-wrap items-center gap-3 border-b border-zinc-200 bg-zinc-100 px-3.5 py-2.5 text-sm">
+    <b class="font-semibold text-zinc-900">{title}</b>
+    <div class="seg ml-auto inline-flex rounded-full bg-white p-1 shadow-sm">
+      {
+        settings.map((s) => (
+          <button
+            type="button"
+            data-key={s.key}
+            class:list={[
+              "rounded-full px-3 py-1 text-[13px] font-medium",
+              s.key === defaultKey ? "bg-zinc-900 text-white" : "text-zinc-600 hover:text-zinc-900",
+            ]}
+          >
+            {s.label}
+          </button>
+        ))
+      }
+    </div>
+  </div>
+  {
+    settings.map((s) => {
+      const bP = best(s.rows, "psnr");
+      const bS = best(s.rows, "ssim");
+      const bL = best(s.rows, "lpips");
+      const bF = bestFps(s.rows);
+      const bR = bestRecon(s.rows);
+      return (
+        <div class:list={["overflow-x-auto", s.key !== defaultKey && "hidden"]} data-panel={s.key}>
+          <table class="m-0 w-full border-collapse text-[13px] tabular-nums">
+            <thead>
+              <tr class="text-[12.5px] text-zinc-600">
+                <th class="px-3 py-2 text-left font-semibold">Method</th>
+                <th class="px-2 py-2 text-right font-semibold">PSNR ↑</th>
+                <th class="px-2 py-2 text-right font-semibold">SSIM ↑</th>
+                <th class="px-2 py-2 text-right font-semibold">LPIPS ↓</th>
+                <th class="px-2 py-2 text-right font-semibold">Recon ↓</th>
+                <th class="px-3 py-2 text-right font-semibold">FPS ↑</th>
+              </tr>
+            </thead>
+            <tbody>
+              {s.rows.map((r) => {
+                const fpsNum = num(r.fps);
+                const reconNum = num(r.recon);
+                return (
+                  <tr class:list={["border-t border-zinc-200", r.ours && "bg-nv-soft"]}>
+                    <td class:list={["px-3 py-1.5 text-left whitespace-nowrap", r.ours && "font-semibold text-nv-ink"]}>
+                      {r.method}
+                      {r.venue && <span class="ml-1.5 text-[11px] font-normal text-zinc-400">{r.venue}</span>}
+                    </td>
+                    <td class:list={["px-2 py-1.5 text-right", r.psnr !== undefined && r.psnr === bP && "font-bold text-zinc-900"]}>{fmt(r.psnr, 2)}</td>
+                    <td class:list={["px-2 py-1.5 text-right", r.ssim !== undefined && r.ssim === bS && "font-bold text-zinc-900"]}>{fmt(r.ssim, 3)}</td>
+                    <td class:list={["px-2 py-1.5 text-right", r.lpips !== undefined && r.lpips === bL && "font-bold text-zinc-900"]}>{fmt(r.lpips, 3)}</td>
+                    <td class:list={["px-2 py-1.5 text-right whitespace-nowrap", !Number.isNaN(reconNum) && reconNum === bR && "font-bold text-zinc-900"]}>{r.recon ?? "–"}</td>
+                    <td class:list={["px-3 py-1.5 text-right whitespace-nowrap", !Number.isNaN(fpsNum) && fpsNum === bF && "font-bold text-zinc-900"]}>{r.fps ?? "–"}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      );
+    })
+  }
+  {note && <p class="m-0 border-t border-zinc-200 px-3.5 py-2 text-xs text-zinc-500">{note}</p>}
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>(".results-table").forEach((root) => {
+    const buttons = [...root.querySelectorAll<HTMLButtonElement>(".seg button")];
+    const panels = [...root.querySelectorAll<HTMLElement>("[data-panel]")];
+    buttons.forEach((b) =>
+      b.addEventListener("click", () => {
+        buttons.forEach((x) => {
+          const on = x === b;
+          x.classList.toggle("bg-zinc-900", on);
+          x.classList.toggle("text-white", on);
+          x.classList.toggle("text-zinc-600", !on);
+        });
+        panels.forEach((p) => p.classList.toggle("hidden", p.dataset.panel !== b.dataset.key));
+      }),
+    );
+  });
+</script>

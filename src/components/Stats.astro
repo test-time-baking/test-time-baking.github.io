@@ -1,0 +1,34 @@
+---
+/** A row of key numbers. `unit` is rendered in NVIDIA green; `accent` colors the whole value. */
+interface Item {
+  value: string;
+  unit?: string;
+  label: string;
+  accent?: boolean;
+}
+
+interface Props {
+  items: Item[];
+}
+
+const { items } = Astro.props;
+---
+
+<div class="not-prose my-6 grid grid-cols-2 gap-3 md:grid-cols-4">
+  {
+    items.map((i) => (
+      <div class="rounded-2xl bg-zinc-100 px-4 py-4">
+        <div
+          class:list={[
+            "text-3xl font-bold tracking-tight",
+            i.accent ? "text-nv" : "text-zinc-900",
+          ]}
+        >
+          {i.value}
+          {i.unit && <span class="text-nv"> {i.unit}</span>}
+        </div>
+        <div class="mt-1 text-[13px] leading-snug text-zinc-500">{i.label}</div>
+      </div>
+    ))
+  }
+</div>

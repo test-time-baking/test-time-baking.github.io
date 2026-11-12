@@ -1,0 +1,53 @@
+---
+import ChartCard from "./ChartCard.astro";
+---
+
+<ChartCard
+  title="Scene state size at 960p as the number of input views grows"
+>
+  <svg
+    viewBox="0 0 760 250"
+    role="img"
+    aria-label="Scene state size versus number of input views: the KV-cache grows linearly, TTB stays flat"
+  >
+    <g stroke="#e4e4e7">
+      <line x1="60" y1="20" x2="60" y2="205"></line>
+      <line x1="60" y1="205" x2="740" y2="205"></line>
+      <line x1="60" y1="143" x2="740" y2="143" stroke-dasharray="3 4"></line>
+      <line x1="60" y1="81" x2="740" y2="81" stroke-dasharray="3 4"></line>
+      <line x1="60" y1="20" x2="740" y2="20" stroke-dasharray="3 4"></line>
+    </g>
+    <text x="52" y="209" text-anchor="end">100 MB</text>
+    <text x="52" y="147" text-anchor="end">1 GB</text>
+    <text x="52" y="85" text-anchor="end">10 GB</text>
+    <text x="52" y="24" text-anchor="end">100 GB</text>
+    <g text-anchor="middle">
+      <text x="90" y="228">1</text><text x="170" y="228">2</text><text x="250" y="228">4</text>
+      <text x="330" y="228">8</text><text x="410" y="228">16</text><text x="490" y="228">32</text>
+      <text x="570" y="228">64</text><text x="650" y="228">128</text><text x="730" y="228">256</text>
+    </g>
+    <text x="400" y="246" text-anchor="middle">number of input views V</text>
+    <polyline
+      fill="none"
+      stroke="#a1a1aa"
+      stroke-width="2.5"
+      points="90,165.7 170,147.1 250,128.4 330,109.7 410,91.1 490,72.4 570,53.7 650,35.1 730,16.4"></polyline>
+    <g fill="#a1a1aa">
+      <circle cx="90" cy="165.7" r="4"></circle><circle cx="170" cy="147.1" r="4"></circle>
+      <circle cx="250" cy="128.4" r="4"></circle><circle cx="330" cy="109.7" r="4"></circle>
+      <circle cx="410" cy="91.1" r="4"></circle><circle cx="490" cy="72.4" r="4"></circle>
+      <circle cx="570" cy="53.7" r="4"></circle><circle cx="650" cy="35.1" r="4"></circle>
+      <circle cx="730" cy="16.4" r="4"></circle>
+    </g>
+    <polyline fill="none" stroke="#76B900" stroke-width="3" points="90,173.3 730,173.3"></polyline>
+    <g fill="#76B900">
+      <circle cx="90" cy="173.3" r="4"></circle><circle cx="250" cy="173.3" r="4"></circle>
+      <circle cx="410" cy="173.3" r="4"></circle><circle cx="570" cy="173.3" r="4"></circle>
+      <circle cx="730" cy="173.3" r="4"></circle>
+    </g>
+    <text x="470" y="50" style="fill:#71717a" text-anchor="end">KV-cache</text>
+    <text x="600" y="164" style="fill:#4f7d00" font-weight="600">TTB fast weights</text>
+    <text x="712" y="130" style="fill:#18181b" font-weight="600" text-anchor="end">340× smaller at V = 256</text>
+    <line x1="730" y1="24.4" x2="730" y2="165.3" stroke="#18181b" stroke-width="1.5" stroke-dasharray="3 3"></line>
+  </svg>
+</ChartCard>

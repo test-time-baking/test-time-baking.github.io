@@ -1,0 +1,194 @@
+---
+/**
+ * The teaser video: one large 16:9 box right under the nav, with the title
+ * block following it (the Atlas blog's opening). The teaser carries its own burned-in captions, so it is
+ * shown whole on black, never cropped. It autoplays muted and loops; hovering
+ * (or pausing) reveals play/pause, the time, a seek bar and fullscreen. Video
+ * and poster live in /public.
+ */
+interface Props {
+  /** Path inside /public, e.g. "video/ttb-teaser.mp4". */
+  video: string;
+  /** Path inside /public, e.g. "video/posters/ttb-teaser.jpg". */
+  poster: string;
+  /** Accessible name for the video. */
+  label?: string;
+}
+
+const { video, poster, label = "Teaser video" } = Astro.props;
+
+const baseUrl = import.meta.env.BASE_URL;
+const prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
+---
+
+<section class="teaser-player full-bleed not-prose mb-12" data-stage>
+  <div class="mx-auto max-w-[96rem] sm:px-6 lg:px-10">
+    <div class="group relative aspect-video overflow-hidden bg-black sm:rounded-[20px]">
+      <video
+        class="tp-video block h-full w-full cursor-pointer"
+        src={prefix + video}
+        poster={prefix + poster}
+        autoplay
+        muted
+        loop
+        playsinline
+        preload="auto"
+        aria-label={label}></video>
+
+      {/* Big play button, only while paused. */}
+      <button
+        type="button"
+        class="tp-bigplay absolute top-1/2 left-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-zinc-950 shadow-lg transition hover:bg-white"
+        aria-label="Play teaser"
+      >
+        <svg viewBox="0 0 24 24" class="ml-1 h-7 w-7" fill="currentColor" aria-hidden="true">
+          <path d="M8 5v14l11-7z" />
+        </svg>
+      </button>
+
+      {/* Controls: play/pause, time, seek bar, fullscreen. Shown on hover and
+          while paused (a tap pauses on touch screens), so they never sit on
+          the teaser's own captions while it plays. */}
+      <div
+        class="tp-controls absolute inset-x-0 bottom-0 flex items-center gap-3 bg-linear-to-t from-black/75 to-transparent px-4 pt-10 pb-3 opacity-0 transition-opacity duration-200 group-hover:opacity-100 focus-within:opacity-100"
+      >
+        <button
+          type="button"
+          class="tp-play flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white hover:bg-white/15"
+          aria-label="Play or pause"
+        >
+          <svg viewBox="0 0 24 24" class="tp-icon-play ml-0.5 h-5 w-5" fill="currentColor" aria-hidden="true">
+            <path d="M8 5v14l11-7z" />
+          </svg>
+          <svg viewBox="0 0 24 24" class="tp-icon-pause h-5 w-5" fill="currentColor" aria-hidden="true">
+            <path d="M6 5h4v14H6zm8 0h4v14h-4z" />
+          </svg>
+        </button>
+        <span class="tp-time w-[6.5rem] shrink-0 text-xs text-white/80 tabular-nums">0:00 / 0:00</span>
+        <div
+          class="tp-bar relative h-4 flex-1 cursor-pointer"
+          role="slider"
+          aria-label="Seek"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          aria-valuenow="0"
+          tabindex="0"
+        >
+          <div class="absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-white/25">
+            <div class="tp-fill h-full w-0 rounded-full bg-nv"></div>
+          </div>
+        </div>
+        <button
+          type="button"
+          class="tp-fs flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white hover:bg-white/15"
+          aria-label="Fullscreen"
+        >
+          <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  /* Playing: hide the big play button and the "play" glyph. Paused: the
+     reverse, and keep the control bar visible. */
+  .teaser-player:not(.is-paused) .tp-bigplay,
+  .teaser-player:not(.is-paused) .tp-icon-play,
+  .teaser-player.is-paused .tp-icon-pause {
+    display: none;
+  }
+  .teaser-player.is-paused .tp-controls {
+    opacity: 1;
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>(".teaser-player").forEach((root) => {
+    const video = root.querySelector<HTMLVideoElement>(".tp-video");
+    const bar = root.querySelector<HTMLElement>(".tp-bar");
+    const fill = root.querySelector<HTMLElement>(".tp-fill");
+    const time = root.querySelector<HTMLElement>(".tp-time");
+    if (!video) return;
+
+    const fmt = (s: number) =>
+      `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+    const sync = () => {
+      const d = video.duration || 0;
+      const f = d ? video.currentTime / d : 0;
+      if (fill) fill.style.width = `${f * 100}%`;
+      if (bar) bar.setAttribute("aria-valuenow", String(Math.round(f * 100)));
+      if (time) time.textContent = `${fmt(video.currentTime)} / ${fmt(d)}`;
+      root.classList.toggle("is-paused", video.paused);
+    };
+    ["timeupdate", "loadedmetadata", "durationchange", "play", "pause", "seeked"].forEach((ev) =>
+      video.addEventListener(ev, sync),
+    );
+    sync();
+
+    // Play/pause from the big button, the small button, or the video itself.
+    let userPaused = false;
+    const toggle = () => {
+      if (video.paused) {
+        userPaused = false;
+        video.play().catch(() => {});
+      } else {
+        userPaused = true;
+        video.pause();
+      }
+    };
+    root.querySelectorAll<HTMLElement>(".tp-play, .tp-bigplay").forEach((b) =>
+      b.addEventListener("click", toggle),
+    );
+    video.addEventListener("click", toggle);
+
+    root.querySelector<HTMLElement>(".tp-fs")?.addEventListener("click", () => {
+      const v = video as HTMLVideoElement & { webkitEnterFullscreen?: () => void };
+      if (video.requestFullscreen) video.requestFullscreen().catch(() => {});
+      else v.webkitEnterFullscreen?.();
+    });
+
+    // Seek: click or drag along the bar; arrow keys nudge by 5 s.
+    if (bar) {
+      const seekTo = (clientX: number) => {
+        const r = bar.getBoundingClientRect();
+        const f = Math.min(1, Math.max(0, (clientX - r.left) / r.width));
+        if (video.duration) video.currentTime = f * video.duration;
+      };
+      let scrubbing = false;
+      bar.addEventListener("pointerdown", (e) => {
+        scrubbing = true;
+        bar.setPointerCapture(e.pointerId);
+        seekTo(e.clientX);
+      });
+      bar.addEventListener("pointermove", (e) => scrubbing && seekTo(e.clientX));
+      bar.addEventListener("pointerup", () => (scrubbing = false));
+      bar.addEventListener("pointercancel", () => (scrubbing = false));
+      bar.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowRight") video.currentTime = Math.min(video.duration, video.currentTime + 5);
+        else if (e.key === "ArrowLeft") video.currentTime = Math.max(0, video.currentTime - 5);
+        else if (e.key === " " || e.key === "Enter") toggle();
+        else return;
+        e.preventDefault();
+      });
+    }
+
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      // Show the poster and let the viewer press play.
+      video.removeAttribute("autoplay");
+      video.pause();
+      userPaused = true;
+    } else {
+      // Some browsers block muted autoplay until the page is touched.
+      const nudge = () => {
+        if (video.paused && !userPaused) video.play().catch(() => {});
+      };
+      nudge();
+      ["pointerdown", "keydown", "touchstart"].forEach((ev) =>
+        window.addEventListener(ev, nudge, { once: true, passive: true }),
+      );
+    }
+  });
+</script>

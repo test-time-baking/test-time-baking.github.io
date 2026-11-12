@@ -1,0 +1,35 @@
+---
+/**
+ * Media block in one of the page's three widths (the Atlas blog's system):
+ *
+ *  - "content" (default): exactly the text column. Charts, tables, equations.
+ *  - "mid": wider than the column but clear of the floating outline, which
+ *    therefore stays visible beside it (`.mid-bleed` in global.css). Videos,
+ *    interactive demos, the paper's figures.
+ *  - "full": the page frame that the nav and the teaser use (96rem with
+ *    2.5rem gutters). The outline fades while a full stage passes behind it.
+ */
+interface Props {
+  width?: "content" | "mid" | "full";
+}
+const { width = "content" } = Astro.props;
+---
+
+{
+  width === "full" ? (
+    <div class="full-bleed stage my-10" data-stage>
+      <div class="mx-auto max-w-[96rem] px-6 lg:px-10 [&>:first-child]:mt-0 [&>:last-child]:mb-0">
+        <slot />
+      </div>
+    </div>
+  ) : (
+    <div
+      class:list={[
+        "stage my-10 [&>:first-child]:mt-0 [&>:last-child]:mb-0",
+        width === "mid" && "mid-bleed",
+      ]}
+    >
+      <slot />
+    </div>
+  )
+}

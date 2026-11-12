@@ -1,0 +1,348 @@
+---
+/**
+ * Real-time side-by-side of two methods along the same camera path.
+ *
+ * The media is one composite video per scene and input-view count, built by
+ * tools/speed_compare.py: left half = the slow method, right half = the fast
+ * one, both re-timed so that at time t each half shows the newest frame that
+ * method has finished rendering, given its measured per-frame render time.
+ * The component shows the left half through a cropped <video> and copies the
+ * right half onto a <canvas> on every animation frame, so the two panels are
+ * always exactly in sync whether they sit side by side or stacked. Each
+ * panel carries only its method name and its fps; everything else (frame
+ * counters, clock, per-frame times, PSNR) was removed to keep the stage quiet.
+ */
+export type Views = 16 | 32 | 64;
+
+export interface CompareScene {
+  id: string;
+  label: string;
+  /** Dataset name, part of the tile's tooltip. */
+  set: string;
+  /** Poster for the scene tile (a normal single-width frame of the scene). */
+  poster: string;
+  /**
+   * Poster for the two panels: the first frame of a composite clip (double width,
+   * left half slow / right half fast, as written by tools/speed_compare.py --poster).
+   * Falls back to `poster`, which then shows the wrong crop until the video loads.
+   */
+  panelPoster?: string;
+  /** Composite video per input-view count, path inside /public. */
+  videos: Partial<Record<Views, string>>;
+}
+
+interface Props {
+  scenes: CompareScene[];
+  defaultViews?: Views;
+  /** Render speed of the slow method per input-view count, frames per second. */
+  slowFps: Record<Views, number>;
+  /** Render speed of the fast method, frames per second (constant). */
+  fastFps: number;
+  slowLabel?: string;
+  fastLabel?: string;
+  caption?: string;
+}
+
+const {
+  scenes,
+  defaultViews = 64,
+  slowFps,
+  fastFps,
+  slowLabel = "KV-cache",
+  fastLabel = "TTB",
+  caption,
+} = Astro.props;
+
+const baseUrl = import.meta.env.BASE_URL;
+const prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
+const first = scenes[0];
+const firstVideo = first.videos[defaultViews] ?? Object.values(first.videos)[0]!;
+const firstPanelPoster = first.panelPoster ?? first.poster;
+
+const fpsText = (fps: number) => `${Math.round(fps)}`;
+---
+
+<div
+  class="speed-compare not-prose my-4"
+  data-prefix={prefix}
+  data-scenes={JSON.stringify(scenes)}
+  data-default-views={defaultViews}
+  data-slow-fps={JSON.stringify(slowFps)}
+  data-fast-fps={fastFps}
+>
+  <div class="mb-3.5 flex flex-wrap items-center gap-2.5">
+    <div class="seg views inline-flex rounded-full bg-zinc-100 p-1">
+      {
+        ([16, 32, 64] as const).map((k) => (
+          <button
+            type="button"
+            data-k={k}
+            class:list={[
+              "rounded-full px-3.5 py-1.5 text-sm font-medium text-zinc-600",
+              k === defaultViews && "bg-white text-zinc-900 shadow-sm",
+            ]}
+          >
+            {k} views
+          </button>
+        ))
+      }
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+    <div>
+      <div class="panel relative aspect-[960/544] overflow-hidden rounded-2xl bg-black select-none">
+        <video
+          class="cmp-video absolute inset-0 h-full w-[200%] max-w-none object-cover"
+          src={prefix + firstVideo}
+          poster={prefix + firstPanelPoster}
+          muted
+          loop
+          playsinline
+          autoplay
+          preload="auto"></video>
+        <div class="absolute top-3 left-3.5 rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-zinc-900">{slowLabel}</div>
+        <div class="absolute top-3 right-3.5 flex items-baseline gap-1 rounded-full bg-black/60 px-3 py-1 text-white backdrop-blur">
+          <b class="fps-slow text-lg leading-none font-bold tabular-nums">{fpsText(slowFps[defaultViews])}</b>
+          <span class="text-xs font-medium">fps</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="panel relative aspect-[960/544] overflow-hidden rounded-2xl bg-black select-none">
+        <div
+          class="cmp-poster absolute inset-0 bg-cover"
+          style={`background-image: url('${prefix + firstPanelPoster}'); background-size: 200% 100%; background-position: 100% 0`}
+        >
+        </div>
+        <canvas class="cmp-canvas absolute inset-0 h-full w-full" width="960" height="544"></canvas>
+        <div class="absolute top-3 left-3.5 rounded-full bg-nv px-2.5 py-1 text-xs font-semibold text-white">{fastLabel}</div>
+        <div class="absolute top-3 right-3.5 flex items-baseline gap-1 rounded-full bg-black/60 px-3 py-1 text-white backdrop-blur">
+          <b class="fps-fast text-lg leading-none font-bold tabular-nums">{fpsText(fastFps)}</b>
+          <span class="text-xs font-medium">fps</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-2 flex h-7 items-center gap-2.5 px-1">
+    <button type="button" class="play grid h-7 w-7 place-items-center rounded-full border border-zinc-200 bg-white p-0" aria-label="Play or pause">
+      <svg class="play-icon h-3 w-3" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"></path></svg>
+    </button>
+    <div class="bar relative h-[3px] flex-1 cursor-pointer rounded-sm bg-zinc-200">
+      <i class="fill absolute top-0 left-0 h-full w-0 rounded-sm bg-nv"></i>
+      <b class="knob absolute top-1/2 left-0 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-nv bg-white"></b>
+    </div>
+  </div>
+
+  {caption && <p class="mt-4 mb-2.5 text-center text-sm text-zinc-500">{caption}</p>}
+
+  <div
+    class="scene-tiles mx-auto mt-3 grid [grid-template-columns:repeat(var(--cols-sm),minmax(0,1fr))] gap-3 sm:[grid-template-columns:repeat(var(--cols),minmax(0,1fr))]"
+    style={`--cols: ${scenes.length}; --cols-sm: ${Math.ceil(scenes.length / 2)}; max-width: calc(${scenes.length} * 168px + ${scenes.length - 1} * 0.75rem)`}
+  >
+    {
+      scenes.map((s, i) => (
+        <button
+          type="button"
+          class:list={[
+            "tile relative aspect-video w-full overflow-hidden rounded-[10px] border-[3px] bg-black p-0",
+            i === 0 ? "border-nv" : "border-transparent",
+          ]}
+          data-scene={s.id}
+          aria-pressed={i === 0 ? "true" : "false"}
+          aria-label={`${s.label}, ${s.set}`}
+          title={`${s.label} · ${s.set}`}
+        >
+          <img src={prefix + s.poster} alt="" class="h-full w-full object-cover" loading="lazy" decoding="async" />
+        </button>
+      ))
+    }
+  </div>
+</div>
+
+<script>
+  type Views = 16 | 32 | 64;
+  interface Scene {
+    id: string;
+    label: string;
+    set: string;
+    poster: string;
+    panelPoster?: string;
+    videos: Partial<Record<Views, string>>;
+  }
+
+  document.querySelectorAll<HTMLElement>(".speed-compare").forEach((root) => {
+    const prefix = root.dataset.prefix ?? "/";
+    const scenes: Scene[] = JSON.parse(root.dataset.scenes ?? "[]");
+    const slowFps: Record<string, number> = JSON.parse(root.dataset.slowFps ?? "{}");
+    const fastFps = Number(root.dataset.fastFps ?? 23);
+    let views = Number(root.dataset.defaultViews ?? 64) as Views;
+    let scene = scenes[0];
+
+    const video = root.querySelector<HTMLVideoElement>(".cmp-video")!;
+    const canvas = root.querySelector<HTMLCanvasElement>(".cmp-canvas")!;
+    const ctx = canvas.getContext("2d")!;
+    const posterEl = root.querySelector<HTMLElement>(".cmp-poster")!;
+    const q = <T extends HTMLElement>(sel: string) => root.querySelector<T>(sel)!;
+    const fpsSlow = q(".fps-slow"), fpsFast = q(".fps-fast");
+    const fill = q(".fill"), knob = q(".knob"), bar = q(".bar");
+    const playBtn = q<HTMLButtonElement>(".play"), playIcon = root.querySelector<SVGElement>(".play-icon")!;
+    const viewButtons = [...root.querySelectorAll<HTMLButtonElement>(".views button")];
+    const tiles = [...root.querySelectorAll<HTMLButtonElement>(".scene-tiles .tile")];
+
+    const ICON_PLAY = '<path d="M6 4l14 8-14 8z"/>';
+    const ICON_PAUSE = '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>';
+
+    // --- the right panel is a live copy of the right half of the composite -----------
+    function draw() {
+      if (video.readyState < 2 || !video.videoWidth) return;
+      const w = video.videoWidth / 2;
+      const h = video.videoHeight;
+      if (canvas.width !== w || canvas.height !== h) {
+        canvas.width = w;
+        canvas.height = h;
+      }
+      ctx.drawImage(video, w, 0, w, h, 0, 0, w, h);
+    }
+
+    // --- the progress bar follows the video clock -------------------------------------
+    function readouts() {
+      const t = video.currentTime || 0;
+      const d = video.duration || 12;
+      const f = d ? t / d : 0;
+      fill.style.width = `${f * 100}%`;
+      knob.style.left = `${f * 100}%`;
+    }
+    (function tick() {
+      draw();
+      readouts();
+      requestAnimationFrame(tick);
+    })();
+    // Browsers throttle requestAnimationFrame in background or occluded tabs; keep the
+    // readouts honest there too (timeupdate fires a few times a second regardless).
+    video.addEventListener("timeupdate", readouts);
+    video.addEventListener("loadeddata", () => {
+      draw();
+      posterEl.style.opacity = "0";
+    });
+    video.addEventListener("seeked", draw);
+
+    // --- labels -----------------------------------------------------------------------
+    function updateLabels() {
+      const sf = slowFps[String(views)] ?? 1;
+      fpsSlow.textContent = String(Math.round(sf));
+      fpsFast.textContent = String(Math.round(fastFps));
+      viewButtons.forEach((b) => {
+        const k = Number(b.dataset.k) as Views;
+        const available = Boolean(scene.videos[k]);
+        b.disabled = !available;
+        b.classList.toggle("opacity-40", !available);
+        b.classList.toggle("cursor-not-allowed", !available);
+        const on = k === views;
+        b.classList.toggle("bg-white", on);
+        b.classList.toggle("text-zinc-900", on);
+        b.classList.toggle("shadow-sm", on);
+        b.classList.toggle("text-zinc-600", !on);
+      });
+    }
+
+    function loadVideo(keepTime: boolean) {
+      const t = keepTime ? video.currentTime : 0;
+      const wasPlaying = !video.paused;
+      const src = scene.videos[views]!;
+      const panelPoster = prefix + (scene.panelPoster ?? scene.poster);
+      video.poster = panelPoster;
+      posterEl.style.backgroundImage = `url('${panelPoster}')`;
+      posterEl.style.opacity = "1";
+      video.src = prefix + src;
+      video.addEventListener(
+        "loadedmetadata",
+        () => {
+          video.currentTime = Math.min(t, Math.max(0, video.duration - 0.05));
+          if (wasPlaying) video.play().catch(() => {});
+        },
+        { once: true },
+      );
+      video.load();
+    }
+
+    function setScene(id: string) {
+      const s = scenes.find((x) => x.id === id);
+      if (!s) return;
+      scene = s;
+      if (!scene.videos[views]) {
+        const avail = (Object.keys(scene.videos).map(Number) as Views[]).sort((a, b) => a - b);
+        views = avail[avail.length - 1];
+      }
+      updateLabels();
+      loadVideo(false);
+      video.play().catch(() => {});
+    }
+
+    function setViews(k: Views) {
+      if (!scene.videos[k] || k === views) return;
+      views = k;
+      updateLabels();
+      loadVideo(true);
+    }
+
+    // --- transport ----------------------------------------------------------------
+    const setPlayIcon = () => (playIcon.innerHTML = video.paused ? ICON_PLAY : ICON_PAUSE);
+    video.addEventListener("play", setPlayIcon);
+    video.addEventListener("pause", setPlayIcon);
+    playBtn.addEventListener("click", () => {
+      if (video.paused) video.play().catch(() => {});
+      else video.pause();
+    });
+    bar.addEventListener("pointerdown", (e) => {
+      const r = bar.getBoundingClientRect();
+      const f = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+      if (video.duration) video.currentTime = f * video.duration;
+      readouts();
+    });
+
+    viewButtons.forEach((b) => b.addEventListener("click", () => setViews(Number(b.dataset.k) as Views)));
+    tiles.forEach((t) =>
+      t.addEventListener("click", () => {
+        tiles.forEach((x) => {
+          const on = x === t;
+          x.classList.toggle("border-nv", on);
+          x.classList.toggle("border-transparent", !on);
+          x.setAttribute("aria-pressed", on ? "true" : "false");
+        });
+        if (t.dataset.scene) setScene(t.dataset.scene);
+      }),
+    );
+
+    updateLabels();
+    setPlayIcon();
+    // Some browsers block muted autoplay until the page is touched.
+    const nudge = () => {
+      if (video.paused && video.currentTime === 0) video.play().catch(() => {});
+    };
+    nudge();
+    ["pointerdown", "keydown", "scroll", "touchstart"].forEach((ev) =>
+      window.addEventListener(ev, nudge, { once: true, passive: true }),
+    );
+
+    // Decoding a 1920-px clip and copying half of it every frame is not free: pause
+    // while the section is scrolled far away and resume where it left off.
+    if ("IntersectionObserver" in window) {
+      let pausedByUs = false;
+      new IntersectionObserver(
+        (entries) => {
+          const visible = entries.some((e) => e.isIntersecting);
+          if (!visible && !video.paused) {
+            video.pause();
+            pausedByUs = true;
+          } else if (visible && pausedByUs) {
+            pausedByUs = false;
+            video.play().catch(() => {});
+          }
+        },
+        { rootMargin: "400px 0px" },
+      ).observe(root);
+    }
+  });
+</script>

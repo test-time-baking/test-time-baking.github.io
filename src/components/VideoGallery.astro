@@ -1,0 +1,54 @@
+---
+/**
+ * Grid of short fly-through videos that play on hover (or on tap on touch
+ * devices). Video files live in /public so they are served as-is.
+ */
+interface Item {
+  src: string;
+  poster: string;
+  label: string;
+}
+
+interface Props {
+  items: Item[];
+}
+
+const { items } = Astro.props;
+
+const baseUrl = import.meta.env.BASE_URL;
+const prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
+---
+
+<div class="video-gallery not-prose my-4 grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+  {
+    items.map((it) => (
+      <div class="relative overflow-hidden rounded-xl bg-black">
+        <video
+          class="aspect-video w-full object-cover"
+          src={prefix + it.src}
+          poster={prefix + it.poster}
+          muted
+          loop
+          playsinline
+          preload="metadata"
+        />
+        <span class="absolute bottom-2 left-2.5 text-xs font-medium text-white [text-shadow:0_1px_2px_rgba(0,0,0,.8)]">
+          {it.label}
+        </span>
+      </div>
+    ))
+  }
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>(".video-gallery > div").forEach((cell) => {
+    const v = cell.querySelector("video");
+    if (!v) return;
+    const play = () => {
+      v.play().catch(() => {});
+    };
+    cell.addEventListener("mouseenter", play);
+    cell.addEventListener("mouseleave", () => v.pause());
+    cell.addEventListener("click", () => (v.paused ? play() : v.pause()));
+  });
+</script>

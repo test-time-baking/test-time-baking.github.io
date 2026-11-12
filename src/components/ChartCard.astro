@@ -1,0 +1,16 @@
+---
+/** Bordered card that frames an inline SVG chart with a title and subtitle. */
+interface Props {
+  title: string;
+  subtitle?: string;
+}
+const { title, subtitle } = Astro.props;
+---
+
+<div class="not-prose my-6 rounded-2xl border border-zinc-200 bg-white px-5 pt-4 pb-3">
+  <h5 class="m-0 text-[15px] font-semibold text-zinc-900">{title}</h5>
+  {subtitle && <p class="mt-0.5 mb-2 text-[13px] text-zinc-500">{subtitle}</p>}
+  <div class="chart [&_svg]:block [&_svg]:h-auto [&_svg]:w-full [&_text]:fill-zinc-500 [&_text]:text-[12px]">
+    <slot />
+  </div>
+</div>
