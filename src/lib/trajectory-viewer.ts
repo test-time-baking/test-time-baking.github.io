@@ -229,9 +229,12 @@ export function createTrajectoryViewer(container: HTMLElement): TrajectoryViewer
     root.add(current);
     setFrame(frame);
 
-    // Look at the scene from behind the cameras, slightly above.
+    // Look at the scene from behind the first fly-through camera, slightly above. The path is shared by every
+    // view count of a scene, so the view stays put when the visitor switches 16 / 32 / 64 views; the context
+    // cameras' mean direction nearly cancels for a full orbit and would point elsewhere for each view count.
     const look = new THREE.Vector3();
-    data.context.forEach((c) => look.add(new THREE.Vector3(c.c2w[2], c.c2w[6], c.c2w[10])));
+    if (data.path.length) look.set(data.path[0][2], data.path[0][6], data.path[0][10]);
+    else data.context.forEach((c) => look.add(new THREE.Vector3(c.c2w[2], c.c2w[6], c.c2w[10])));
     look.applyQuaternion(q);
     look.y = 0;
     if (look.lengthSq() < 1e-6) look.set(0, 0, 1);

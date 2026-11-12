@@ -5,7 +5,7 @@
  * Left: the real context views that were fed to the model, and a 3D view of
  * their cameras together with the fly-through camera path (the camera of the
  * frame currently shown is highlighted and follows the video). Right: the TTB
- * fly-through along the scene's held-out camera path, with play/pause and a
+ * fly-through along a smooth orbit fitted to the capture, with play/pause and a
  * progress bar; the view-count switch swaps in the fly-through rendered from
  * 16, 32 or 64 input views of the same scene and keeps the playback position.
  * The videos are pre-rendered, so the stage offers no camera control.
@@ -16,7 +16,7 @@
  *
  * Media live in /public: videos and posters under /video, camera data under
  * /traj (`<scene>-<views>.json` plus `ctx/<scene>/<frame>.jpg` thumbnails,
- * produced by tools/dump_traj.py on the cluster).
+ * produced by tools/orbit_make.py on the cluster).
  */
 export interface DemoScene {
   id: string;
@@ -41,7 +41,7 @@ interface Props {
 const {
   scenes,
   defaultViews = 64,
-  totalFrames = 360,
+  totalFrames = 240,
   caption,
 } = Astro.props;
 
@@ -163,7 +163,7 @@ const inputLabel = (v: number) => (v > 16 ? `Input · 16 of ${v} views` : `Input
   document.querySelectorAll<HTMLElement>(".demo-stage").forEach((root) => {
     const prefix = root.dataset.prefix ?? "/";
     const scenes: Scene[] = JSON.parse(root.dataset.scenes ?? "[]");
-    const totalFrames = Number(root.dataset.totalFrames ?? 360);
+    const totalFrames = Number(root.dataset.totalFrames ?? 240);
     let views = Number(root.dataset.defaultViews ?? 64) as Views;
     let scene = scenes[0];
 
