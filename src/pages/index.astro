@@ -52,11 +52,14 @@ const site = Astro.site ? new URL(prefix, Astro.site).href : undefined;
     {thumbnail && <meta property="og:image" content={(site ?? prefix) + thumbnail} />}
     <meta name="twitter:card" content="summary_large_image" />
 
-    <Font cssVariable="--font-nvidia-sans" preload />
+    <Font
+      cssVariable="--font-noto-sans"
+      preload={[{ subset: "latin", style: "normal" }]}
+    />
 
     <title>{title}</title>
   </head>
-  <body class="font-(family-name:--font-nvidia-sans) text-zinc-900">
+  <body class="font-(family-name:--font-noto-sans) text-zinc-900">
     <NvidiaNav
       labName="NVIDIA Research Taiwan"
       labUrl="https://research.nvidia.com/labs/twn/"

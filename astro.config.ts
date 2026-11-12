@@ -18,15 +18,6 @@ import astroExpressiveCode from "astro-expressive-code";
 const base = process.env.BASE_PATH ?? "/";
 const site = process.env.SITE_URL ?? "https://research.nvidia.com";
 
-// NVIDIA Sans is NVIDIA's corporate typeface. The font files are bundled from
-// src/assets/fonts; see README.md before publishing the repository.
-const fontDir = "./src/assets/fonts";
-const nvidiaSans = (file: string, weight: number, style: "normal" | "italic" = "normal") => ({
-  weight,
-  style,
-  src: [`${fontDir}/${file}`] as [string],
-});
-
 // https://astro.build/config
 export default defineConfig({
   site,
@@ -74,19 +65,13 @@ export default defineConfig({
   ],
   fonts: [
     {
-      provider: fontProviders.local(),
-      name: "NVIDIA Sans",
-      cssVariable: "--font-nvidia-sans",
-      fallbacks: ["Inter", "Noto Sans", "system-ui", "sans-serif"],
-      options: {
-        variants: [
-          nvidiaSans("NVIDIASans-Light.ttf", 300),
-          nvidiaSans("NVIDIASans-Regular.ttf", 400),
-          nvidiaSans("NVIDIASans-Medium.ttf", 500),
-          nvidiaSans("NVIDIASans-Bold.ttf", 700),
-          nvidiaSans("NVIDIASans-Italic.ttf", 400, "italic"),
-        ],
-      },
+      // Noto Sans (SIL Open Font License 1.1), the template's default. Astro
+      // downloads it from Google Fonts at build time and serves it with the
+      // page, so no font files live in the repository.
+      provider: fontProviders.google(),
+      name: "Noto Sans",
+      cssVariable: "--font-noto-sans",
+      weights: ["100 900"],
     },
   ],
   image: {

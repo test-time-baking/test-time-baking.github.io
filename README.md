@@ -34,4 +34,4 @@ BASE_PATH=/labs/twn/ttb SITE_URL=https://research.nvidia.com npm run build
 
 ## Fonts
 
-`src/assets/fonts/` contains NVIDIA Sans, NVIDIA's corporate typeface. It is not licensed for reuse outside NVIDIA projects.
+The page is set in [Noto Sans](https://fonts.google.com/noto/specimen/Noto+Sans) (SIL Open Font License 1.1), the template's default. Astro's Fonts API downloads it from Google Fonts at build time and serves it with the page; no font files are stored in the repository. To change it, edit `fonts` in `astro.config.ts` and the `--font-noto-sans` variable in `src/pages/index.astro`.
