@@ -7,8 +7,9 @@ import ChartCard from "./ChartCard.astro";
 >
   <svg viewBox="0 0 760 230" role="img" aria-label="Ablation from TTT to TTB: each change raises PSNR until full TTB passes DVSM">
     <line x1="40" y1="190" x2="740" y2="190" stroke="#e4e4e7"></line>
-    <line x1="40" y1="84" x2="740" y2="84" stroke="#18181b" stroke-dasharray="4 4"></line>
-    <text x="46" y="76" style="fill:#18181b" font-weight="600">KV-cache 24.68 dB</text>
+    {/* Bars: 43 px per dB above y = 190 (23.12 dB = 44 px). The KV-cache line sits on the same scale: 24.68 dB = 111 px. */}
+    <line x1="40" y1="79" x2="740" y2="79" stroke="#18181b" stroke-dasharray="4 4"></line>
+    <text x="46" y="71" style="fill:#18181b" font-weight="600">KV-cache 24.68 dB</text>
     <g fill="#d4d4d8"><rect x="70" y="146" width="110" height="44" rx="4"></rect></g>
     <g fill="#a1a1aa">
       <rect x="230" y="118" width="110" height="72" rx="4"></rect>

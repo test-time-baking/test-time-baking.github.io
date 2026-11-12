@@ -4,11 +4,12 @@ import ChartCard from "./ChartCard.astro";
 
 <ChartCard
   title="Scene state size at 960p as the number of input views grows"
+  subtitle="Hollow points: linear extrapolation where the KV-cache ran out of 80 GB of memory."
 >
   <svg
     viewBox="0 0 760 250"
     role="img"
-    aria-label="Scene state size versus number of input views: the KV-cache grows linearly, TTB stays flat"
+    aria-label="Scene state size versus number of input views: the KV-cache grows linearly (extrapolated at 128 and 256 views, where it ran out of 80 GB of memory), TTB stays flat"
   >
     <g stroke="#e4e4e7">
       <line x1="60" y1="20" x2="60" y2="205"></line>
@@ -31,13 +32,18 @@ import ChartCard from "./ChartCard.astro";
       fill="none"
       stroke="#a1a1aa"
       stroke-width="2.5"
-      points="90,165.7 170,147.1 250,128.4 330,109.7 410,91.1 490,72.4 570,53.7 650,35.1 730,16.4"></polyline>
+      points="90,165.7 170,147.1 250,128.4 330,109.7 410,91.1 490,72.4 570,53.7"></polyline>
+    {/* Beyond 64 views the KV-cache no longer fits in 80 GB: linear extrapolation, dashed with hollow points at 128 and
+        256 (paper Fig. 7; 64 views is the last measured point). */}
+    <polyline fill="none" stroke="#a1a1aa" stroke-width="2.5" stroke-dasharray="7 5" points="570,53.7 650,35.1 730,16.4"></polyline>
     <g fill="#a1a1aa">
       <circle cx="90" cy="165.7" r="4"></circle><circle cx="170" cy="147.1" r="4"></circle>
       <circle cx="250" cy="128.4" r="4"></circle><circle cx="330" cy="109.7" r="4"></circle>
       <circle cx="410" cy="91.1" r="4"></circle><circle cx="490" cy="72.4" r="4"></circle>
-      <circle cx="570" cy="53.7" r="4"></circle><circle cx="650" cy="35.1" r="4"></circle>
-      <circle cx="730" cy="16.4" r="4"></circle>
+      <circle cx="570" cy="53.7" r="4"></circle>
+    </g>
+    <g fill="#fff" stroke="#a1a1aa" stroke-width="2.2">
+      <circle cx="650" cy="35.1" r="3.6"></circle><circle cx="730" cy="16.4" r="3.6"></circle>
     </g>
     <polyline fill="none" stroke="#76B900" stroke-width="3" points="90,173.3 730,173.3"></polyline>
     <g fill="#76B900">

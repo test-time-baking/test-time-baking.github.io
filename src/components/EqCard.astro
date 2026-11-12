@@ -2,6 +2,13 @@
 /**
  * Card for one displayed equation (write the math in the default slot with
  * KaTeX `$$ ... $$`). `ours` tints the card green.
+ *
+ * Phones: an equation cannot wrap, so the card must be allowed to be narrower
+ * than it (`min-w-0`; as a grid item it would otherwise grow to the equation
+ * and push the whole page wider than the screen). The math shrinks with the
+ * viewport on narrow screens so the equation still fits, and scrolls inside
+ * the card if it does not (`main .eq-card .katex*` rules in global.css; they
+ * must be unlayered to beat KaTeX's own stylesheet, a utility class cannot).
  */
 interface Props {
   kicker: string;
@@ -13,7 +20,7 @@ const { kicker, note, ours = false } = Astro.props;
 
 <div
   class:list={[
-    "eq-card rounded-2xl border px-5 py-4",
+    "eq-card min-w-0 rounded-2xl border px-5 py-4",
     ours ? "border-nv bg-nv-soft" : "border-zinc-200 bg-white",
   ]}
 >
@@ -25,7 +32,7 @@ const { kicker, note, ours = false } = Astro.props;
   >
     {kicker}
   </div>
-  <div class="eq-body [&_.katex]:text-[0.95rem]">
+  <div class="eq-body">
     <slot />
   </div>
   {note && <p class="m-0 text-sm text-zinc-600">{note}</p>}

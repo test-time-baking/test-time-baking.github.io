@@ -1,7 +1,7 @@
 ---
 /**
- * Screen recording of the live demo (the Gradio + viser app behind the Hugging
- * Face Space) with a link to open it. Video and poster live in /public.
+ * Screen recording of the live demo (the Hugging Face Space: its Gradio page with
+ * the viser viewer) and a link to open it. Video and poster live in /public.
  */
 import { Icon } from "astro-icon/components";
 
@@ -14,15 +14,17 @@ interface Props {
   href: string;
   label?: string;
   caption?: string;
+  /** Aspect ratio of the recording, as CSS (e.g. "16 / 10"). */
+  aspect?: string;
 }
 
-const { video, poster, href, label = "Open the demo on Hugging Face", caption } = Astro.props;
+const { video, poster, href, label = "Open the demo on Hugging Face", caption, aspect = "16 / 9" } = Astro.props;
 const baseUrl = import.meta.env.BASE_URL;
 const prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
 ---
 
 <figure class="live-demo not-prose my-0">
-  <div class="relative aspect-video overflow-hidden rounded-[20px] bg-black ring-1 ring-black/5">
+  <div class="relative overflow-hidden rounded-[20px] bg-white ring-1 ring-black/10" style={`aspect-ratio: ${aspect}`}>
     <video
       class="h-full w-full object-cover"
       src={prefix + video}

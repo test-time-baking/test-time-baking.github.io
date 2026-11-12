@@ -104,6 +104,11 @@ main .eq-card .katex-display {
 main .eq-card .katex-display > .katex > .katex-html {
   padding-inline: 0;
 }
+/* An equation cannot wrap. Below ~570px the math in a card shrinks with the
+   viewport so the widest card equation (19 em) still fits a phone screen. */
+main .eq-card .katex {
+  font-size: min(1.21em, 3.8vw);
+}
 
 /* Dense benchmark tables written in Markdown. */
 main .prose table,

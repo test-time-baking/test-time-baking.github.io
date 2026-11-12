@@ -5,7 +5,8 @@
  * Left: the real context views that were fed to the model, and a 3D view of
  * their cameras together with the fly-through camera path (the camera of the
  * frame currently shown is highlighted and follows the video). Right: the TTB
- * fly-through along a smooth orbit fitted to the capture, with play/pause and a
+ * fly-through along a smooth path fitted to the capture (an 8 s orbit that
+ * loops seamlessly, or a 12 s walk along the route), with play/pause and a
  * progress bar; the view-count switch swaps in the fly-through rendered from
  * 16, 32 or 64 input views of the same scene and keeps the playback position.
  * The videos are pre-rendered, so the stage offers no camera control.
@@ -215,7 +216,11 @@ const inputLabel = (v: number) => (v > 16 ? `Input · 16 of ${v} views` : `Input
 
     function renderThumbs(data: TrajData | null) {
       inGrid.innerHTML = "";
-      const frames = data ? data.context.slice(0, 16).map((c) => c.frame) : [];
+      // 16 thumbnails spread over the whole capture (the context list is in capture order), so a walk-through
+      // scene shows its whole route and not just the first metres.
+      const ctx = data ? data.context : [];
+      const shown = ctx.length > 16 ? Array.from({ length: 16 }, (_, i) => ctx[Math.round((i * (ctx.length - 1)) / 15)]) : ctx;
+      const frames = shown.map((c) => c.frame);
       const few = views <= 2;
       inGrid.className = few
         ? "in-grid grid grid-cols-2 gap-1.5"

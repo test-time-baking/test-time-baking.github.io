@@ -7,8 +7,10 @@
  * clone at each end (the last clip before the first, the first after the
  * last); when a clone comes to rest in the centre the track jumps, without
  * animation, to the real slide. Only the centred clip plays (muted, looping);
- * the rest sit dimmed on their posters until scrolled in, which keeps nine
- * 20-30 MB recordings from loading at once. There are no browser controls:
+ * the rest sit dimmed on their posters until scrolled in, which keeps the
+ * clips (up to 30 MB each) from loading at once. The clips are not all the
+ * same size (960x536 recordings, 960x544 renders), so the video covers its
+ * 16:9 frame instead of leaving thin bars. There are no browser controls:
  * clicking the centred clip pauses and resumes it (a play badge shows while
  * paused), a thin progress line runs along its bottom edge, and clicking a
  * peeking neighbour brings it to the centre. Files live in /public.
@@ -52,7 +54,7 @@ const prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
       class="track relative flex snap-x snap-mandatory gap-3 overflow-x-auto px-(--peek) [--peek:7.5%] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:[--peek:15%] lg:[--peek:25%]"
       tabindex="0"
       aria-roledescription="carousel"
-      aria-label="Live viewer recordings"
+      aria-label="Result clips"
     >
       {
         slides.map((s) => (
@@ -66,7 +68,7 @@ const prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
             title={s.note ? `${s.label} · ${s.note}` : s.label}
           >
             <video
-              class="block aspect-video w-full"
+              class="block aspect-video w-full object-cover"
               src={prefix + s.video}
               poster={prefix + s.poster}
               muted

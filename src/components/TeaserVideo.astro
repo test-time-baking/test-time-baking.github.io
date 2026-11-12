@@ -13,17 +13,23 @@ interface Props {
   poster: string;
   /** Accessible name for the video. */
   label?: string;
+  /**
+   * Opening in the style of research.nvidia.com/labs/gear/robottt: the video is the whole first screen, edge to
+   * edge on the teaser's own near-black, with a "Scroll" cue; the top bar stays out of the way until the visitor
+   * has scrolled past it. Without this prop the video is a rounded box in the page frame, under the top bar.
+   */
+  fullscreen?: boolean;
 }
 
-const { video, poster, label = "Teaser video" } = Astro.props;
+const { video, poster, label = "Teaser video", fullscreen = false } = Astro.props;
 
 const baseUrl = import.meta.env.BASE_URL;
 const prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
 ---
 
-<section class="teaser-player full-bleed not-prose mb-12" data-stage>
-  <div class="mx-auto max-w-[96rem] sm:px-6 lg:px-10">
-    <div class="group relative aspect-video overflow-hidden bg-black sm:rounded-[20px]">
+<section class:list={["teaser-player full-bleed not-prose mb-12", fullscreen && "is-hero"]} data-stage>
+  <div class={fullscreen ? undefined : "mx-auto max-w-[96rem] sm:px-6 lg:px-10"}>
+    <div class:list={["tp-box group relative overflow-hidden", !fullscreen && "aspect-video bg-black sm:rounded-[20px]"]}>
       <video
         class="tp-video block h-full w-full cursor-pointer"
         src={prefix + video}
@@ -88,6 +94,16 @@ const prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
           </svg>
         </button>
       </div>
+
+      {/* Full-screen opening only: a cue that the page continues below. It moves up out of the control bar's way. */}
+      {
+        fullscreen && (
+          <button type="button" class="tp-scroll absolute bottom-6 left-1/2 flex-col items-center gap-2 text-xs font-medium text-white/60 hover:text-white">
+            Scroll
+            <span class="tp-chev" aria-hidden="true" />
+          </button>
+        )
+      }
     </div>
   </div>
 </section>
@@ -102,6 +118,85 @@ const prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
   }
   .teaser-player.is-paused .tp-controls {
     opacity: 1;
+  }
+
+  /* Full-screen opening. Phones and other tall windows get the video at full width (16:9), as a strip at the very
+     top; wide windows get exactly one screen, the video centred on the teaser's own background colour so the bars
+     above and below it (or beside it) do not show. */
+  .teaser-player.is-hero .tp-box {
+    aspect-ratio: 16 / 9;
+    background: #0c0c0c;
+  }
+  .tp-scroll {
+    display: none;
+    translate: -50% 0;
+    transition:
+      translate 0.2s,
+      color 0.15s;
+  }
+  .tp-chev {
+    width: 10px;
+    height: 10px;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: rotate(45deg);
+    animation: tp-bob 1.8s ease-in-out infinite;
+  }
+  @keyframes tp-bob {
+    0%,
+    100% {
+      transform: rotate(45deg) translate(0, 0);
+    }
+    50% {
+      transform: rotate(45deg) translate(3px, 3px);
+    }
+  }
+  @media (min-aspect-ratio: 5/4) {
+    .teaser-player.is-hero .tp-box {
+      aspect-ratio: auto;
+      height: 100vh;
+      height: 100svh;
+    }
+    .teaser-player.is-hero .tp-scroll {
+      display: inline-flex;
+    }
+    /* The control bar is showing (pointer over the video, or paused): lift the cue above it. */
+    .teaser-player.is-hero .tp-box:hover .tp-scroll,
+    .teaser-player.is-hero.is-paused .tp-scroll {
+      translate: -50% -2.75rem;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tp-chev {
+      animation: none;
+    }
+  }
+</style>
+
+<style is:global>
+  /* Full-screen opening: nothing above the video. The top bar leaves the flow and stays hidden until the script
+     below marks the opening as passed; the page's top padding goes too, so the video starts at the very top. */
+  body:has(.teaser-player.is-hero) .site-nav {
+    position: fixed;
+    inset: 0 0 auto;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-0.5rem);
+    transition:
+      opacity 0.24s,
+      transform 0.24s,
+      visibility 0s 0.24s;
+  }
+  html.hero-passed body:has(.teaser-player.is-hero) .site-nav {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    transition:
+      opacity 0.24s,
+      transform 0.24s;
+  }
+  body:has(.teaser-player.is-hero) > .prose {
+    padding-top: 0;
   }
 </style>
 
@@ -173,6 +268,20 @@ const prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
         else return;
         e.preventDefault();
       });
+    }
+
+    // Full-screen opening: show the top bar once the video has scrolled up to where the bar sits, and let the
+    // "Scroll" cue bring the title to the top of the window (just under that bar).
+    if (root.classList.contains("is-hero")) {
+      const NAV = 64;
+      const end = () => root.getBoundingClientRect().bottom + window.scrollY;
+      const mark = () => document.documentElement.classList.toggle("hero-passed", window.scrollY > end() - NAV - 8);
+      window.addEventListener("scroll", mark, { passive: true });
+      window.addEventListener("resize", mark);
+      mark();
+      root.querySelector<HTMLElement>(".tp-scroll")?.addEventListener("click", () =>
+        window.scrollTo({ top: end() - NAV, behavior: "smooth" }),
+      );
     }
 
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) {

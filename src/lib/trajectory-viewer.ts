@@ -165,7 +165,9 @@ export function createTrajectoryViewer(container: HTMLElement): TrajectoryViewer
       ...data.context.map((c) => new THREE.Vector3(c.c2w[3], c.c2w[7], c.c2w[11])),
       ...data.path.map((p) => new THREE.Vector3(p[3], p[7], p[11])),
     ].map((p) => p.applyQuaternion(q));
-    const center = positions.reduce((a, p) => a.add(p), new THREE.Vector3()).multiplyScalar(1 / positions.length);
+    // Centre of the cameras' bounding box, not their mean: a fly-through that covers only part of the capture
+    // (a slide along one stretch of a long tracking shot) would pull the mean to that side and shrink the view.
+    const center = new THREE.Box3().setFromPoints(positions).getCenter(new THREE.Vector3());
     let radius = 0;
     let minY = Infinity;
     positions.forEach((p) => {
@@ -239,7 +241,24 @@ export function createTrajectoryViewer(container: HTMLElement): TrajectoryViewer
     look.y = 0;
     if (look.lengthSq() < 1e-6) look.set(0, 0, 1);
     look.normalize();
-    camera.position.copy(look.clone().multiplyScalar(-2.1)).add(new THREE.Vector3(0, 1.9, 0));
+    // Pull back until every camera position is inside the frame with a margin: an orbit already is, but a
+    // walk-through route seen from behind its start would run off the bottom edge.
+    const base = look.clone().multiplyScalar(-2.1).add(new THREE.Vector3(0, 1.9, 0));
+    const world = positions.map((p) => p.clone().sub(center).multiplyScalar(s));
+    const ndc = new THREE.Vector3();
+    let pull = 1;
+    for (; pull < 2.4; pull += 0.05) {
+      camera.position.copy(base).multiplyScalar(pull);
+      camera.lookAt(0, 0, 0);
+      camera.updateMatrixWorld();
+      camera.updateProjectionMatrix();
+      const inside = world.every((p) => {
+        ndc.copy(p).project(camera);
+        return Math.abs(ndc.x) < 0.86 && Math.abs(ndc.y) < 0.86;
+      });
+      if (inside) break;
+    }
+    camera.position.copy(base).multiplyScalar(pull);
     controls.target.set(0, 0, 0);
     controls.update();
     needsRender = true;
