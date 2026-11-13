@@ -6,7 +6,7 @@ favicon: favicon.ico
 description: "Test-time Baking (TTB) renders novel views at a constant 23 fps without building any 3D representation: it bakes cross-view attention into fast-weight MLPs, up to 23× faster than the KV-cache baseline at comparable quality. NeurIPS 2026 Spotlight."
 thumbnail: video/posters/ttb-teaser.jpg
 # Used by the floating table of contents.
-paperUrl: "#citation"
+paperUrl: "https://arxiv.org/abs/2611.17331"
 ---
 
 import TitleRow from "./components/TitleRow.astro";
@@ -57,7 +57,7 @@ import figPipeline from "./assets/figures/fig3-pipeline.png";
   ]}
   notes={[{ symbol: "*", text: "Work done during an internship at NVIDIA" }]}
   links={[
-    { name: "arXiv", url: "#", icon: "academicons:arxiv" },
+    { name: "arXiv", url: "https://arxiv.org/abs/2611.17331", icon: "academicons:arxiv" },
     { name: "Code", url: "https://github.com/NVlabs/DVSM", icon: "ri:github-line" },
     { name: "Demo", url: "https://huggingface.co/spaces/nvidia/DVSM", icon: "simple-icons:huggingface" },
   ]}
@@ -346,10 +346,10 @@ Residual learning and feedback each add about +0.4 dB; together +0.5 dB.
 ## Citation
 
 ```bibtex
-@inproceedings{lin2026ttb,
+@article{lin2026ttb,
   title     = {TTB: Test-time Baking for Efficient Rendering of Decoder-only View Synthesis Models},
   author    = {Lin, Chin-Yang and Hachiuma, Ryo and Choe, Jaesung and Chen, Min-Hung and Wang, Yu-Chiang Frank and Lin, Yen-Yu and Chiu, Wei-Chen and Liu, Yu-Lun and Sun, Cheng},
-  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  journal   = {arXiv preprint arXiv:2611.17331},
   year      = {2026}
 }
 ```
