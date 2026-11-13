@@ -1,7 +1,7 @@
 ---
 /**
- * The teaser video: one large 16:9 box right under the nav, with the title
- * block following it (the Atlas blog's opening). The teaser carries its own burned-in captions, so it is
+ * The teaser video: one large 16:9 box with the title block following it (the Atlas blog's opening): a rounded
+ * box in the page frame right under the nav, or with `fullscreen` the full-width opening described below. The teaser carries its own burned-in captions, so it is
  * shown whole on black, never cropped. It autoplays muted and loops; hovering
  * (or pausing) reveals play/pause, the time, a seek bar and fullscreen. Video
  * and poster live in /public.
@@ -14,9 +14,12 @@ interface Props {
   /** Accessible name for the video. */
   label?: string;
   /**
-   * Opening in the style of research.nvidia.com/labs/gear/robottt: the video is the whole first screen, edge to
-   * edge on the teaser's own near-black, with a "Scroll" cue; the top bar stays out of the way until the visitor
-   * has scrolled past it. Without this prop the video is a rounded box in the page frame, under the top bar.
+   * Opening in the style of research.nvidia.com/labs/gear/robottt: the video is the first thing on the page, edge
+   * to edge at its own 16:9 from the very top, with a "Scroll" cue; the top bar stays out of the way until the
+   * visitor has scrolled past it. Like there, its size comes from the window's width alone: in a window taller than
+   * 16:9 the page shows below it, in a wider one it runs below the fold, and it never leaves a strip beside it. The
+   * title block follows after a wider gap than under the boxed video (88 px, the reference's; 64 px on phones).
+   * Without this prop the video is a rounded box in the page frame, under the top bar.
    */
   fullscreen?: boolean;
 }
@@ -27,7 +30,7 @@ const baseUrl = import.meta.env.BASE_URL;
 const prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
 ---
 
-<section class:list={["teaser-player full-bleed not-prose mb-12", fullscreen && "is-hero"]} data-stage>
+<section class:list={["teaser-player full-bleed not-prose", fullscreen ? "is-hero mb-16 sm:mb-22" : "mb-12"]} data-stage>
   <div class={fullscreen ? undefined : "mx-auto max-w-[96rem] sm:px-6 lg:px-10"}>
     <div class:list={["tp-box group relative overflow-hidden", !fullscreen && "aspect-video bg-black sm:rounded-[20px]"]}>
       <video
@@ -44,7 +47,7 @@ const prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
       {/* Big play button, only while paused. */}
       <button
         type="button"
-        class="tp-bigplay absolute top-1/2 left-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-zinc-950 shadow-lg transition hover:bg-white"
+        class="tp-bigplay absolute top-1/2 left-1/2 z-10 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-zinc-950 shadow-lg transition hover:bg-white"
         aria-label="Play teaser"
       >
         <svg viewBox="0 0 24 24" class="ml-1 h-7 w-7" fill="currentColor" aria-hidden="true">
@@ -52,58 +55,62 @@ const prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
         </svg>
       </button>
 
-      {/* Controls: play/pause, time, seek bar, fullscreen. Shown on hover and
-          while paused (a tap pauses on touch screens), so they never sit on
-          the teaser's own captions while it plays. */}
-      <div
-        class="tp-controls absolute inset-x-0 bottom-0 flex items-center gap-3 bg-linear-to-t from-black/75 to-transparent px-4 pt-10 pb-3 opacity-0 transition-opacity duration-200 group-hover:opacity-100 focus-within:opacity-100"
-      >
-        <button
-          type="button"
-          class="tp-play flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white hover:bg-white/15"
-          aria-label="Play or pause"
-        >
-          <svg viewBox="0 0 24 24" class="tp-icon-play ml-0.5 h-5 w-5" fill="currentColor" aria-hidden="true">
-            <path d="M8 5v14l11-7z" />
-          </svg>
-          <svg viewBox="0 0 24 24" class="tp-icon-pause h-5 w-5" fill="currentColor" aria-hidden="true">
-            <path d="M6 5h4v14H6zm8 0h4v14h-4z" />
-          </svg>
-        </button>
-        <span class="tp-time w-[6.5rem] shrink-0 text-xs text-white/80 tabular-nums">0:00 / 0:00</span>
+      {/* Foot: a zero-height line at the box's bottom edge that the control bar and the cue hang from. In the
+          full-width opening it is sticky, so both stay on screen where the video runs below the window. */}
+      <div class="tp-foot">
+        {/* Controls: play/pause, time, seek bar, fullscreen. Shown on hover and
+            while paused (a tap pauses on touch screens), so they never sit on
+            the teaser's own captions while it plays. */}
         <div
-          class="tp-bar relative h-4 flex-1 cursor-pointer"
-          role="slider"
-          aria-label="Seek"
-          aria-valuemin="0"
-          aria-valuemax="100"
-          aria-valuenow="0"
-          tabindex="0"
+          class="tp-controls absolute inset-x-0 bottom-0 flex items-center gap-3 bg-linear-to-t from-black/75 to-transparent px-4 pt-10 pb-3 opacity-0 transition-opacity duration-200 group-hover:opacity-100 focus-within:opacity-100"
         >
-          <div class="absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-white/25">
-            <div class="tp-fill h-full w-0 rounded-full bg-nv"></div>
-          </div>
-        </div>
-        <button
-          type="button"
-          class="tp-fs flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white hover:bg-white/15"
-          aria-label="Fullscreen"
-        >
-          <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
-          </svg>
-        </button>
-      </div>
-
-      {/* Full-screen opening only: a cue that the page continues below. It moves up out of the control bar's way. */}
-      {
-        fullscreen && (
-          <button type="button" class="tp-scroll absolute bottom-6 left-1/2 flex-col items-center gap-2 text-xs font-medium text-white/60 hover:text-white">
-            Scroll
-            <span class="tp-chev" aria-hidden="true" />
+          <button
+            type="button"
+            class="tp-play flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white hover:bg-white/15"
+            aria-label="Play or pause"
+          >
+            <svg viewBox="0 0 24 24" class="tp-icon-play ml-0.5 h-5 w-5" fill="currentColor" aria-hidden="true">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+            <svg viewBox="0 0 24 24" class="tp-icon-pause h-5 w-5" fill="currentColor" aria-hidden="true">
+              <path d="M6 5h4v14H6zm8 0h4v14h-4z" />
+            </svg>
           </button>
-        )
-      }
+          <span class="tp-time w-[6.5rem] shrink-0 text-xs text-white/80 tabular-nums">0:00 / 0:00</span>
+          <div
+            class="tp-bar relative h-4 flex-1 cursor-pointer"
+            role="slider"
+            aria-label="Seek"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow="0"
+            tabindex="0"
+          >
+            <div class="absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-white/25">
+              <div class="tp-fill h-full w-0 rounded-full bg-nv"></div>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="tp-fs flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white hover:bg-white/15"
+            aria-label="Fullscreen"
+          >
+            <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Full-width opening only: a cue that the page continues below. It moves up out of the control bar's way. */}
+        {
+          fullscreen && (
+            <button type="button" class="tp-scroll absolute bottom-6 left-1/2 flex-col items-center gap-2 text-xs font-medium text-white/60 hover:text-white">
+              Scroll
+              <span class="tp-chev" aria-hidden="true" />
+            </button>
+          )
+        }
+      </div>
     </div>
   </div>
 </section>
@@ -119,17 +126,47 @@ const prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
   .teaser-player.is-paused .tp-controls {
     opacity: 1;
   }
+  /* The bar's gradient and padding never take a click meant for the picture, and its buttons only take one while
+     the bar shows (paused, keyboard focus inside it, or a mouse over the video). */
+  .tp-controls,
+  .tp-controls > * {
+    pointer-events: none;
+  }
+  .teaser-player.is-paused .tp-controls > *,
+  .tp-controls:focus-within > * {
+    pointer-events: auto;
+  }
+  @media (hover: hover) {
+    .tp-box:hover .tp-controls > * {
+      pointer-events: auto;
+    }
+  }
 
-  /* Full-screen opening. Phones and other tall windows get the video at full width (16:9), as a strip at the very
-     top; wide windows get exactly one screen, the video centred on the teaser's own background colour so the bars
-     above and below it (or beside it) do not show. */
+  /* Full-width opening: the video at 16:9 across the whole window, from the very top, whatever the window's shape
+     (as on the RoboTTT page). No height limit: a limit shrinks the 16:9 box sideways too and leaves a strip of page
+     beside it. In a window wider than 16:9 the video simply runs below the fold; in a taller one the page shows
+     under it. */
   .teaser-player.is-hero .tp-box {
     aspect-ratio: 16 / 9;
-    background: #0c0c0c;
+    background: #0c0c0c; /* the teaser's own near-black, until the poster has painted */
+    overflow: clip; /* not `hidden`: that would make the box a scroll container and the sticky foot could not follow the window */
+  }
+  /* The foot comes right after the video, which is the box's full height, so it lies on the box's bottom edge; the
+     control bar and the cue are positioned from it. In the opening it sticks to the window's bottom edge while the
+     video's own bottom edge is still below the fold (a window wider than 16:9), so the controls and the cue are
+     never out of sight, and it comes to rest on the video's bottom edge as the page scrolls. Browsers without
+     `overflow: clip` keep the box's `overflow: hidden` and leave the foot at the bottom of the video. */
+  .tp-foot {
+    height: 0;
+  }
+  .teaser-player.is-hero .tp-foot {
+    position: sticky;
+    bottom: 0;
   }
   .tp-scroll {
     display: none;
     translate: -50% 0;
+    text-shadow: 0 1px 6px rgb(0 0 0 / 0.6);
     transition:
       translate 0.2s,
       color 0.15s;
@@ -151,19 +188,26 @@ const prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
       transform: rotate(45deg) translate(3px, 3px);
     }
   }
+  /* The cue only where the video is tall enough to carry it (not on a phone held upright). */
   @media (min-aspect-ratio: 5/4) {
-    .teaser-player.is-hero .tp-box {
-      aspect-ratio: auto;
-      height: 100vh;
-      height: 100svh;
-    }
     .teaser-player.is-hero .tp-scroll {
       display: inline-flex;
     }
-    /* The control bar is showing (pointer over the video, or paused): lift the cue above it. */
-    .teaser-player.is-hero .tp-box:hover .tp-scroll,
-    .teaser-player.is-hero.is-paused .tp-scroll {
+    /* The control bar is showing (paused, keyboard focus inside it, or a mouse over the video): lift the cue above it. */
+    .teaser-player.is-hero.is-paused .tp-scroll,
+    .teaser-player.is-hero .tp-controls:focus-within ~ .tp-scroll {
       translate: -50% -2.75rem;
+    }
+  }
+  @media (min-aspect-ratio: 5/4) and (hover: hover) {
+    .teaser-player.is-hero .tp-box:hover .tp-scroll {
+      translate: -50% -2.75rem;
+    }
+  }
+  /* A window too short for the play button, the bar and the cue together (a phone held sideways): no cue while paused. */
+  @media (max-height: 26rem) {
+    .teaser-player.is-hero.is-paused .tp-scroll {
+      display: none;
     }
   }
   @media (prefers-reduced-motion: reduce) {
@@ -174,7 +218,7 @@ const prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
 </style>
 
 <style is:global>
-  /* Full-screen opening: nothing above the video. The top bar leaves the flow and stays hidden until the script
+  /* Full-width opening: nothing above the video. The top bar leaves the flow and stays hidden until the script
      below marks the opening as passed; the page's top padding goes too, so the video starts at the very top. */
   body:has(.teaser-player.is-hero) .site-nav {
     position: fixed;
@@ -270,8 +314,8 @@ const prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
       });
     }
 
-    // Full-screen opening: show the top bar once the video has scrolled up to where the bar sits, and let the
-    // "Scroll" cue bring the title to the top of the window (just under that bar).
+    // Full-width opening: show the top bar once the video has scrolled up to where the bar sits, and let the
+    // "Scroll" cue bring the video's bottom edge up to that bar, so the title block follows after its usual gap.
     if (root.classList.contains("is-hero")) {
       const NAV = 64;
       const end = () => root.getBoundingClientRect().bottom + window.scrollY;
