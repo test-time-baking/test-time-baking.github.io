@@ -231,7 +231,7 @@ Each TTB layer bakes the map $X^{(\text{ctx-rend})} \mapsto \mathrm{CrossAttn}(X
 
 ## Benchmarks
 
-We evaluate on the 140 held-out DL3DV scenes at 960p with 16, 32 and 64 input views. **TTB renders every setting at 23 fps, up to 23× faster than the KV-cache model it starts from (DVSM in the table) and 2.3× faster than LaCT, within 1 dB of the KV-cache's quality.** With local-duplicate inference, which keeps one copy of the fast weights per 16 views, it passes the KV-cache at 64 views (31.33 vs 31.11 dB). The cost is paid once, at reconstruction: 65 s for 64 views, against 60 s for the KV-cache and 7.3 s for LaCT.
+We evaluate on the 140 held-out DL3DV scenes at 960p with 16, 32 and 64 input views. **TTB renders every setting at 23 fps, up to 23× faster than the KV-cache model it starts from ([DVSM](https://arxiv.org/abs/2605.29891) in the table) and 2.3× faster than [LaCT](https://arxiv.org/abs/2505.23884), within 1 dB of the KV-cache's quality.** With local-duplicate inference, which keeps one copy of the fast weights per 16 views, it passes the KV-cache at 64 views (31.33 vs 31.11 dB). The cost is paid once, at reconstruction: 65 s for 64 views, against 60 s for the KV-cache and 7.3 s for LaCT.
 
 <Stage>
   <div class="mx-auto max-w-[36rem]">
@@ -353,3 +353,9 @@ Residual learning and feedback each add about +0.4 dB; together +0.5 dB.
   year      = {2026}
 }
 ```
+
+
+## References
+
+1. **Test-Time Training Done Right** (LaCT). ICLR 2026. [arXiv:2505.23884](https://arxiv.org/abs/2505.23884)
+2. **DVSM: Decoder-only View Synthesis Model Done Right**. arXiv 2026. [arXiv:2605.29891](https://arxiv.org/abs/2605.29891)

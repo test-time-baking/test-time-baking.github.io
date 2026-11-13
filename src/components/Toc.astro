@@ -46,7 +46,10 @@ const { paperUrl, paperLabel = "Read the paper" } = Astro.props;
       list.appendChild(li);
       return a;
     });
+    let activeId = "";
     const setActive = (id: string) => {
+      if (id === activeId) return;
+      activeId = id;
       links.forEach((a) => {
         const on = a.getAttribute("href") === "#" + id;
         a.classList.toggle("border-nv", on);
@@ -56,16 +59,18 @@ const { paperUrl, paperLabel = "Read the paper" } = Astro.props;
         a.classList.toggle("text-zinc-500", !on);
       });
     };
-    const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((en) => {
-          if (en.isIntersecting) setActive((en.target as HTMLElement).id);
-        });
-      },
-      { rootMargin: "-20% 0px -70% 0px" },
-    );
-    heads.forEach((h) => io.observe(h));
-    setActive(heads[0].id);
+    // The current section is the last heading above a reading line 30% down the window. Near the end of the page
+    // that line slides down to the window's bottom edge, so a short last section (Citation), whose heading can
+    // never climb to 30%, is still the current one once the page is scrolled all the way down.
+    const spy = () => {
+      const H = innerHeight;
+      const left = document.documentElement.scrollHeight - (scrollY + H);
+      const line = Math.max(0.3 * H, H - Math.max(0, left));
+      let cur = heads[0];
+      for (const h of heads) if (h.getBoundingClientRect().top <= line) cur = h;
+      setActive(cur.id);
+    };
+    spy();
 
     // Fade the TOC out while a full-width stage (hero, demo, wide figure)
     // passes behind it, so the two never overlap.
@@ -90,11 +95,15 @@ const { paperUrl, paperLabel = "Read the paper" } = Astro.props;
     // plus a short settle period after load and after hash navigation.
     let lastY = -1;
     let lastH = -1;
+    let lastDoc = -1;
     let settleUntil = performance.now() + 4000;
     const loop = () => {
-      if (scrollY !== lastY || innerHeight !== lastH || performance.now() < settleUntil) {
+      const doc = document.documentElement.scrollHeight;
+      if (scrollY !== lastY || innerHeight !== lastH || doc !== lastDoc || performance.now() < settleUntil) {
         lastY = scrollY;
         lastH = innerHeight;
+        lastDoc = doc;
+        spy();
         check();
       }
       requestAnimationFrame(loop);
