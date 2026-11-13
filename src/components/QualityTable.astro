@@ -1,0 +1,112 @@
+---
+/**
+ * Quality table for the Motivation section: methods in labelled groups, with
+ * the number of input views and the time each needs before it can render.
+ * Styled like ResultsTable. The best value of every metric column is bold;
+ * a row marked `key` is the one the text is about and gets a grey tint.
+ * The Time and FPS columns each appear when at least one row gives a value;
+ * rows without one show a dash.
+ * The `note` slot is the one-line source note under the table.
+ */
+export interface Row {
+  method: string;
+  /** Small grey text after the method name, such as the model's name. */
+  sub?: string;
+  /** Number of input views, free text such as "64" or "~300". */
+  views: string;
+  /** Per-scene optimization or reconstruction time, such as "60 s" or "2.1 h". */
+  time?: string;
+  psnr: number;
+  ssim: number;
+  lpips: number;
+  /** Rendering speed, free text such as "1" or ">50". Leave out when not reported. */
+  fps?: string;
+  key?: boolean;
+}
+
+interface Props {
+  title: string;
+  groups: { label: string; rows: Row[] }[];
+}
+
+const { title, groups } = Astro.props;
+
+const rows = groups.flatMap((g) => g.rows);
+// "60 s", ">600 s", "2.1 h" and "5 min" all become seconds.
+const seconds = (t?: string) => {
+  if (t === undefined) return NaN;
+  const v = parseFloat(t.replace(/[^0-9.]/g, ""));
+  return /h/.test(t) ? v * 3600 : /min/.test(t) ? v * 60 : v;
+};
+const hasTime = rows.some((r) => r.time !== undefined);
+const hasFps = rows.some((r) => r.fps !== undefined);
+const columns = 5 + (hasTime ? 1 : 0) + (hasFps ? 1 : 0);
+const fpsNum = (v?: string) => parseFloat((v ?? "").replace(/[^0-9.]/g, ""));
+const best = {
+  time: Math.min(...rows.map((r) => seconds(r.time)).filter((v) => !Number.isNaN(v))),
+  psnr: Math.max(...rows.map((r) => r.psnr)),
+  ssim: Math.max(...rows.map((r) => r.ssim)),
+  lpips: Math.min(...rows.map((r) => r.lpips)),
+  fps: Math.max(...rows.map((r) => fpsNum(r.fps)).filter((v) => !Number.isNaN(v))),
+};
+const bold = "font-bold text-zinc-900";
+---
+
+<div class="not-prose my-6 overflow-hidden rounded-2xl border border-zinc-200">
+  <div class="flex flex-wrap items-center gap-3 border-b border-zinc-200 bg-zinc-100 px-3.5 py-2.5 text-sm">
+    <b class="font-semibold text-zinc-900">{title}</b>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="m-0 w-full border-collapse text-[13px] tabular-nums">
+      <thead>
+        <tr class="text-[12.5px] text-zinc-600">
+          <th class="px-3 py-2 text-left font-semibold">Method</th>
+          <th class="px-2 py-2 text-right font-semibold">Input views</th>
+          {hasTime && <th class="px-2 py-2 text-right font-semibold">Time ↓</th>}
+          <th class="px-2 py-2 text-right font-semibold">PSNR ↑</th>
+          <th class="px-2 py-2 text-right font-semibold">SSIM ↑</th>
+          <th class:list={[hasFps ? "px-2" : "px-3", "py-2 text-right font-semibold"]}>LPIPS ↓</th>
+          {hasFps && <th class="px-3 py-2 text-right font-semibold">FPS ↑</th>}
+        </tr>
+      </thead>
+      <tbody>
+        {
+          groups.map((g) => (
+            <>
+              <tr class="border-t border-zinc-200">
+                <td colspan={columns} class="px-3 pt-2 pb-1 text-left text-xs text-zinc-500">
+                  {g.label}
+                </td>
+              </tr>
+              {g.rows.map((r) => (
+                <tr class:list={["border-t border-zinc-200", r.key && "bg-zinc-100"]}>
+                  <td class:list={["px-3 py-1.5 text-left whitespace-nowrap", r.key && "font-semibold text-zinc-900"]}>
+                    {r.method}
+                    {r.sub && <span class="ml-1.5 text-[11px] font-normal text-zinc-400">{r.sub}</span>}
+                  </td>
+                  <td class="px-2 py-1.5 text-right">{r.views}</td>
+                  {hasTime && (
+                    <td class:list={["px-2 py-1.5 text-right whitespace-nowrap", seconds(r.time) === best.time && bold]}>{r.time ?? "–"}</td>
+                  )}
+                  <td class:list={["px-2 py-1.5 text-right", r.psnr === best.psnr && bold]}>{r.psnr.toFixed(2)}</td>
+                  <td class:list={["px-2 py-1.5 text-right", r.ssim === best.ssim && bold]}>{r.ssim.toFixed(3)}</td>
+                  <td class:list={[hasFps ? "px-2" : "px-3", "py-1.5 text-right", r.lpips === best.lpips && bold]}>{r.lpips.toFixed(3)}</td>
+                  {hasFps && (
+                    <td class:list={["px-3 py-1.5 text-right whitespace-nowrap", fpsNum(r.fps) === best.fps && bold]}>{r.fps ?? "–"}</td>
+                  )}
+                </tr>
+              ))}
+            </>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+  {
+    Astro.slots.has("note") && (
+      <p class="m-0 border-t border-zinc-200 px-3.5 py-2 text-xs text-zinc-500 [&_a]:underline [&_a]:decoration-dotted [&_a]:underline-offset-4 hover:[&_a]:text-zinc-900">
+        <slot name="note" />
+      </p>
+    )
+  }
+</div>

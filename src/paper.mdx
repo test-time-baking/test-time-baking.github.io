@@ -3,7 +3,7 @@
 title: "TTB: Test-time Baking for Efficient Rendering of Decoder-only View Synthesis Models"
 theme: light
 favicon: favicon.ico
-description: "Test-time Baking (TTB) bakes cross-view attention into a fast-weight MLP so decoder-only view synthesis models render novel views at a constant 23 fps, up to 23× faster than the KV-cache baseline at comparable quality. NeurIPS 2026 Spotlight."
+description: "Test-time Baking (TTB) renders novel views at a constant 23 fps without building any 3D representation: it bakes cross-view attention into fast-weight MLPs, up to 23× faster than the KV-cache baseline at comparable quality. NeurIPS 2026 Spotlight."
 thumbnail: video/posters/ttb-teaser.jpg
 # Used by the floating table of contents.
 paperUrl: "#citation"
@@ -21,6 +21,7 @@ import Figure from "./components/Figure.astro";
 import Picture from "./components/Picture.astro";
 import Stage from "./components/Stage.astro";
 import ResultsTable from "./components/ResultsTable.astro";
+import QualityTable from "./components/QualityTable.astro";
 import VideoGallery from "./components/VideoGallery.astro";
 import LiveDemo from "./components/LiveDemo.astro";
 import SpeedCompare from "./components/SpeedCompare.astro";
@@ -67,7 +68,7 @@ import figPipeline from "./assets/figures/fig3-pipeline.png";
 
 ## TL;DR
 
-**Test-time Baking (TTB)** turns cross-view attention layers into fixed-size MLP layers at test time, each fit like a light field in latent space. Rendering then costs the same at any number of input views, at the quality of the KV-cache model it starts from.
+**Test-time Baking (TTB)** turns cross-view attention layers into fixed-size MLP layers at test time, each fit like a light field in latent space. Rendering then needs no 3D representation and costs the same at any number of input views, at the quality of the KV-cache model it starts from.
 
 <details>
 <summary>Abstract</summary>
@@ -92,7 +93,7 @@ Decoder-only Large View Synthesis Models (LVSMs) with KV-cache have recently ach
   ]}
 />
 
-## Novel view synthesis
+## Novel view synthesis without a 3D model
 
 TTB takes 16 to 64 posed photos of a scene and renders it from new viewpoints at 960p. No 3D model is built in between: every frame comes from the baked MLP layers alone. Switch between 16, 32 and 64 views to see detail sharpen while the frame rate stays at 23 fps.
 
@@ -118,7 +119,7 @@ TTB takes 16 to 64 posed photos of a scene and renders it from new viewpoints at
 
 ## Live demo
 
-The [Hugging Face Space](https://huggingface.co/spaces/nvidia/DVSM) runs the whole pipeline on one GPU: upload 16–128 photos or a short video, [π³](https://github.com/yyfz/Pi3) estimates the poses, TTB bakes the scene, and the viewer streams freshly rendered frames as you move.
+The [Hugging Face Space](https://huggingface.co/spaces/nvidia/DVSM) runs the whole pipeline on one GPU: upload 16–128 photos or a short video, [π³](https://github.com/yyfz/Pi3) estimates the poses, TTB bakes the scene, and the viewer streams freshly rendered frames as you move. The network renders each frame on the GPU.
 
 <Stage width="full">
   <LiveDemo
@@ -131,11 +132,24 @@ The [Hugging Face Space](https://huggingface.co/spaces/nvidia/DVSM) runs the who
 
 ## Motivation
 
-The scenes above render at 23 fps. Given the same 64 photos, a KV-cache model renders about one frame per second, and it gets slower with every photo added.
+Large view synthesis models, which render novel views without an explicit 3D representation, have caught up with per-scene optimization. Given 64 photos of a DL3DV scene and one minute, a KV-cache model ([DVSM](https://arxiv.org/abs/2605.29891)) reaches 31.1 dB. 3D Gaussian Splatting reaches 27.3 dB from the same 64 photos, and 30.5 dB when optimized on about 300.
+
+<QualityTable
+  title="DL3DV · 140 scenes · 960p"
+  groups={[
+    { label: "Per-scene optimization (explicit 3D Gaussians)", rows: [
+      { method: "3DGS", views: "64", time: ">600 s", psnr: 27.25, ssim: 0.877, lpips: 0.193, fps: ">50" },
+      { method: "3DGS", views: "~300", time: ">600 s", psnr: 30.54, ssim: 0.929, lpips: 0.147, fps: ">50" },
+    ] },
+    { label: "Large view synthesis model (no explicit 3D representation)", rows: [
+      { method: "KV-cache", sub: "DVSM", views: "64", time: "60 s", psnr: 31.11, ssim: 0.920, lpips: 0.104, fps: "1", key: true },
+    ] },
+  ]}
+/>
 
 ### Why the KV-cache slows down
 
-Feed-forward view synthesis **reconstructs** a scene once, then **renders** many novel views from that state. A KV-cache model stores the scene as the keys and values of every input token, and every frame attends to all of it, so each added photo makes every frame slower. TTB instead bakes the scene into **fast weights**: one small MLP per block, written at test time. Their size is fixed, so more photos change what the weights hold, not how many there are.
+A large view synthesis model **reconstructs** a scene once, then **renders** many novel views from that state. The state is not a 3D model: a KV-cache model stores the scene as the keys and values of every input token, and every frame attends to all of it, so each added photo makes every frame slower. TTB instead bakes the scene into **fast weights**: one small MLP per block, written at test time. Their size is fixed, so more photos change what the weights hold, not how many there are.
 
 <StateSizeChart />
 
@@ -150,7 +164,6 @@ Both panels fly the same camera path in real time, and each shows the newest fra
     fastFps={23.2558}
     slowLabel="KV-cache"
     fastLabel="TTB"
-    caption="Simulated from offline renders, timed with the paper's measured render speeds."
     scenes={[
       { id: "dl3dv-l", label: "Floral mannequins", set: "DL3DV", poster: "video/posters/dl3dv-l-64.jpg", panelPoster: "video/posters/cmp-dl3dv-l-64.jpg",
         videos: { 16: "video/cmp-dl3dv-l-16.mp4", 32: "video/cmp-dl3dv-l-32.mp4", 64: "video/cmp-dl3dv-l-64.mp4" } },
@@ -275,7 +288,7 @@ TTB-- uses a linear-projection target instead of attention, so reconstruction st
 
 ### Zero-shot generalization
 
-TTB was trained on DL3DV only. Given 64 photos of scenes from Mip-NeRF 360, Free and Hike, it renders at the same 23 fps and stays close to the KV-cache model in quality. Against LagerNVS, a recent VGGT-based model trained on many datasets, it is 3.1–9.5× faster and clearly more accurate at LagerNVS's 512-pixel setting (numbers in the paper). Hover a scene to play it.
+TTB was trained on DL3DV only. Given 64 photos of scenes from Mip-NeRF 360, Free and Hike, it renders at the same 23 fps and stays close to the KV-cache model in quality. Hover a scene to play it.
 
 <Stage width="mid">
   <VideoGallery
