@@ -1,10 +1,11 @@
 ---
 /**
- * The teaser video: one large 16:9 box with the title block following it (the Atlas blog's opening): a rounded
- * box in the page frame right under the nav, or with `fullscreen` the full-width opening described below. The teaser carries its own burned-in captions, so it is
- * shown whole on black, never cropped. It autoplays muted and loops; hovering
- * (or pausing) reveals play/pause, the time, a seek bar and fullscreen. Video
- * and poster live in /public.
+ * The teaser video: one large 16:9 box with the title block following it. By default it is laid out like the
+ * opening of worldlabs.ai/blog/atlas: a rounded box in the page frame under the top bar (40 px from the window's
+ * edges, at most 1456 px wide, so a wide window keeps air beside it), 56 px below the bar and 64 px above the title
+ * from 1024 px up. With `fullscreen` it is the full-width opening described below. The teaser carries its own
+ * burned-in captions, so it is shown whole on black, never cropped. It autoplays muted and loops; hovering (or
+ * pausing) reveals play/pause, the time, a seek bar and fullscreen. Video and poster live in /public.
  */
 interface Props {
   /** Path inside /public, e.g. "video/ttb-teaser.mp4". */
@@ -30,7 +31,7 @@ const baseUrl = import.meta.env.BASE_URL;
 const prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
 ---
 
-<section class:list={["teaser-player full-bleed not-prose", fullscreen ? "is-hero mb-16 sm:mb-22" : "mb-12"]} data-stage>
+<section class:list={["teaser-player full-bleed not-prose", fullscreen ? "is-hero mb-16 sm:mb-22" : "mb-12 lg:mt-4 lg:mb-16"]} data-stage>
   <div class={fullscreen ? undefined : "mx-auto max-w-[96rem] sm:px-6 lg:px-10"}>
     <div class:list={["tp-box group relative overflow-hidden", !fullscreen && "aspect-video bg-black sm:rounded-[20px]"]}>
       <video
@@ -149,19 +150,21 @@ const prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
   .teaser-player.is-hero .tp-box {
     aspect-ratio: 16 / 9;
     background: #0c0c0c; /* the teaser's own near-black, until the poster has painted */
-    overflow: clip; /* not `hidden`: that would make the box a scroll container and the sticky foot could not follow the window */
+  }
+  /* Both layouts. `clip`, not `hidden`: that would make the box a scroll container and the sticky foot could not
+     follow the window. It still clips to the box's rounded corners. */
+  .tp-box {
+    overflow: clip;
   }
   /* The foot comes right after the video, which is the box's full height, so it lies on the box's bottom edge; the
-     control bar and the cue are positioned from it. In the opening it sticks to the window's bottom edge while the
-     video's own bottom edge is still below the fold (a window wider than 16:9), so the controls and the cue are
+     control bar and the cue are positioned from it. It sticks to the window's bottom edge while the video's own
+     bottom edge is still below the fold (a window too short for the whole video), so the controls and the cue are
      never out of sight, and it comes to rest on the video's bottom edge as the page scrolls. Browsers without
      `overflow: clip` keep the box's `overflow: hidden` and leave the foot at the bottom of the video. */
   .tp-foot {
-    height: 0;
-  }
-  .teaser-player.is-hero .tp-foot {
     position: sticky;
     bottom: 0;
+    height: 0;
   }
   .tp-scroll {
     display: none;
