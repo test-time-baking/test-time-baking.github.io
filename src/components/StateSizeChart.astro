@@ -3,57 +3,114 @@ import ChartCard from "./ChartCard.astro";
 ---
 
 <ChartCard
-  title="Scene state size at 960p as the number of input views grows"
-  subtitle="Hollow points: linear extrapolation where the KV-cache ran out of 80 GB of memory."
+  title="Render speed and scene state size at 960p as the number of input views grows"
+  subtitle="Speed measured on one A100 GPU."
 >
   <svg
-    viewBox="0 0 760 250"
+    viewBox="0 0 760 438"
     role="img"
-    aria-label="Scene state size versus number of input views: the KV-cache grows linearly (extrapolated at 128 and 256 views, where it ran out of 80 GB of memory), TTB stays flat"
+    aria-label="Two panels over 1 to 64 input views. Render speed: the KV-cache falls from 21 fps at 1 view to 1 fps at 64 views while TTB stays at 24 fps. Scene state size: the KV-cache grows linearly to 27 GB at 64 views while TTB stays at 0.3 GB"
   >
+    {/* Top panel: render speed on one A100-SXM4-80GB at 544x960 with torch.compile on, the paper's setting
+        (random inputs, reconstruct once, median of 20 renders, measured 2026-11-13). TTB 24.2-24.5 fps at every V;
+        KV-cache 978 ms per frame at 64 views against TTB's 41 ms (23.6x). Without torch.compile the A100 gives TTB
+        19.3 fps and the same KV-cache speed. */}
+    <text x="60" y="18" style="fill:#18181b" font-weight="600">Render speed</text>
     <g stroke="#e4e4e7">
-      <line x1="60" y1="20" x2="60" y2="205"></line>
-      <line x1="60" y1="205" x2="740" y2="205"></line>
-      <line x1="60" y1="143" x2="740" y2="143" stroke-dasharray="3 4"></line>
-      <line x1="60" y1="81" x2="740" y2="81" stroke-dasharray="3 4"></line>
-      <line x1="60" y1="20" x2="740" y2="20" stroke-dasharray="3 4"></line>
+      <line x1="60" y1="35" x2="60" y2="185"></line>
+      <line x1="60" y1="185" x2="740" y2="185"></line>
+      <line x1="60" y1="135" x2="740" y2="135" stroke-dasharray="3 4"></line>
+      <line x1="60" y1="85" x2="740" y2="85" stroke-dasharray="3 4"></line>
+      <line x1="60" y1="35" x2="740" y2="35" stroke-dasharray="3 4"></line>
     </g>
-    <text x="52" y="209" text-anchor="end">100 MB</text>
-    <text x="52" y="147" text-anchor="end">1 GB</text>
-    <text x="52" y="85" text-anchor="end">10 GB</text>
-    <text x="52" y="24" text-anchor="end">100 GB</text>
-    <g text-anchor="middle">
-      <text x="90" y="228">1</text><text x="170" y="228">2</text><text x="250" y="228">4</text>
-      <text x="330" y="228">8</text><text x="410" y="228">16</text><text x="490" y="228">32</text>
-      <text x="570" y="228">64</text><text x="650" y="228">128</text><text x="730" y="228">256</text>
-    </g>
-    <text x="400" y="246" text-anchor="middle">number of input views V</text>
-    <polyline
-      fill="none"
-      stroke="#a1a1aa"
-      stroke-width="2.5"
-      points="90,165.7 170,147.1 250,128.4 330,109.7 410,91.1 490,72.4 570,53.7"></polyline>
-    {/* Beyond 64 views the KV-cache no longer fits in 80 GB: linear extrapolation, dashed with hollow points at 128 and
-        256 (paper Fig. 7; 64 views is the last measured point). */}
-    <polyline fill="none" stroke="#a1a1aa" stroke-width="2.5" stroke-dasharray="7 5" points="570,53.7 650,35.1 730,16.4"></polyline>
+    <text x="52" y="189" text-anchor="end">0 fps</text>
+    <text x="52" y="139" text-anchor="end">10 fps</text>
+    <text x="52" y="89" text-anchor="end">20 fps</text>
+    <text x="52" y="39" text-anchor="end">30 fps</text>
+    <polyline fill="none" stroke="#a1a1aa" stroke-width="2.5" points="90,79.1 196.7,104 303.3,129.6 410,151.3 516.7,166.1 623.3,175 730,179.9"></polyline>
     <g fill="#a1a1aa">
-      <circle cx="90" cy="165.7" r="4"></circle><circle cx="170" cy="147.1" r="4"></circle>
-      <circle cx="250" cy="128.4" r="4"></circle><circle cx="330" cy="109.7" r="4"></circle>
-      <circle cx="410" cy="91.1" r="4"></circle><circle cx="490" cy="72.4" r="4"></circle>
-      <circle cx="570" cy="53.7" r="4"></circle>
+      <circle cx="90" cy="79.1" r="4"></circle>
+      <circle cx="196.7" cy="104" r="4"></circle>
+      <circle cx="303.3" cy="129.6" r="4"></circle>
+      <circle cx="410" cy="151.3" r="4"></circle>
+      <circle cx="516.7" cy="166.1" r="4"></circle>
+      <circle cx="623.3" cy="175" r="4"></circle>
+      <circle cx="730" cy="179.9" r="4"></circle>
     </g>
-    <g fill="#fff" stroke="#a1a1aa" stroke-width="2.2">
-      <circle cx="650" cy="35.1" r="3.6"></circle><circle cx="730" cy="16.4" r="3.6"></circle>
-    </g>
-    <polyline fill="none" stroke="#76B900" stroke-width="3" points="90,173.3 730,173.3"></polyline>
+    <polyline fill="none" stroke="#76B900" stroke-width="3" points="90,62.9 730,62.9"></polyline>
     <g fill="#76B900">
-      <circle cx="90" cy="173.3" r="4"></circle><circle cx="250" cy="173.3" r="4"></circle>
-      <circle cx="410" cy="173.3" r="4"></circle><circle cx="570" cy="173.3" r="4"></circle>
-      <circle cx="730" cy="173.3" r="4"></circle>
+      <circle cx="90" cy="62.9" r="4"></circle>
+      <circle cx="196.7" cy="62.9" r="4"></circle>
+      <circle cx="303.3" cy="62.9" r="4"></circle>
+      <circle cx="410" cy="62.9" r="4"></circle>
+      <circle cx="516.7" cy="62.9" r="4"></circle>
+      <circle cx="623.3" cy="62.9" r="4"></circle>
+      <circle cx="730" cy="62.9" r="4"></circle>
     </g>
-    <text x="470" y="50" style="fill:#71717a" text-anchor="end">KV-cache</text>
-    <text x="600" y="164" style="fill:#4f7d00" font-weight="600">TTB fast weights</text>
-    <text x="712" y="130" style="fill:#18181b" font-weight="600" text-anchor="end">340× smaller at V = 256</text>
-    <line x1="730" y1="24.4" x2="730" y2="165.3" stroke="#18181b" stroke-width="1.5" stroke-dasharray="3 3"></line>
+    <g style="fill:#71717a">
+      <text x="83" y="93.1" text-anchor="end">21</text>
+      <text x="189.7" y="118" text-anchor="end">16</text>
+      <text x="296.3" y="143.6" text-anchor="end">11</text>
+      <text x="403" y="165.3" text-anchor="end">6.7</text>
+      <text x="509.7" y="180.1" text-anchor="end">3.8</text>
+      <text x="623.3" y="166" text-anchor="middle">2.0</text>
+      <text x="730" y="170.9" text-anchor="middle">1.0</text>
+    </g>
+    <text x="262" y="108" style="fill:#71717a">KV-cache</text>
+    <text x="718" y="52.9" style="fill:#4f7d00" font-weight="600" text-anchor="end">TTB fast weights</text>
+    <text x="718" y="122" style="fill:#18181b" font-weight="600" text-anchor="end">over 23× faster at V = 64</text>
+    <line x1="730" y1="70.9" x2="730" y2="157.9" stroke="#18181b" stroke-width="1.5" stroke-dasharray="3 3"></line>
+
+    {/* Bottom panel: scene state size on a linear axis (paper Fig. 7). KV-cache 430.3 MiB per input view (27,540 MiB at
+        64 views), TTB fast weights 324 MiB at every V: 85x smaller at 64 views. Plotted in GiB. */}
+    <text x="60" y="223" style="fill:#18181b" font-weight="600">Scene state size</text>
+    <g stroke="#e4e4e7">
+      <line x1="60" y1="240" x2="60" y2="390"></line>
+      <line x1="60" y1="390" x2="740" y2="390"></line>
+      <line x1="60" y1="340" x2="740" y2="340" stroke-dasharray="3 4"></line>
+      <line x1="60" y1="290" x2="740" y2="290" stroke-dasharray="3 4"></line>
+      <line x1="60" y1="240" x2="740" y2="240" stroke-dasharray="3 4"></line>
+    </g>
+    <text x="52" y="394" text-anchor="end">0 GB</text>
+    <text x="52" y="344" text-anchor="end">10 GB</text>
+    <text x="52" y="294" text-anchor="end">20 GB</text>
+    <text x="52" y="244" text-anchor="end">30 GB</text>
+    <g text-anchor="middle">
+      <text x="90" y="413">1</text><text x="196.7" y="413">2</text><text x="303.3" y="413">4</text><text x="410" y="413">8</text><text x="516.7" y="413">16</text><text x="623.3" y="413">32</text><text x="730" y="413">64</text>
+    </g>
+    <text x="410" y="431" text-anchor="middle">number of input views V</text>
+    <polyline fill="none" stroke="#a1a1aa" stroke-width="2.5" points="90,387.9 196.7,385.8 303.3,381.6 410,373.2 516.7,356.4 623.3,322.8 730,255.5"></polyline>
+    <g fill="#a1a1aa">
+      <circle cx="90" cy="387.9" r="4"></circle>
+      <circle cx="196.7" cy="385.8" r="4"></circle>
+      <circle cx="303.3" cy="381.6" r="4"></circle>
+      <circle cx="410" cy="373.2" r="4"></circle>
+      <circle cx="516.7" cy="356.4" r="4"></circle>
+      <circle cx="623.3" cy="322.8" r="4"></circle>
+      <circle cx="730" cy="255.5" r="4"></circle>
+    </g>
+    <polyline fill="none" stroke="#76B900" stroke-width="3" points="90,388.4 730,388.4"></polyline>
+    <g fill="#76B900">
+      <circle cx="90" cy="388.4" r="4"></circle>
+      <circle cx="196.7" cy="388.4" r="4"></circle>
+      <circle cx="303.3" cy="388.4" r="4"></circle>
+      <circle cx="410" cy="388.4" r="4"></circle>
+      <circle cx="516.7" cy="388.4" r="4"></circle>
+      <circle cx="623.3" cy="388.4" r="4"></circle>
+      <circle cx="730" cy="388.4" r="4"></circle>
+    </g>
+    <g style="fill:#71717a">
+      <text x="90" y="378.9" text-anchor="middle">0.4</text>
+      <text x="196.7" y="376.8" text-anchor="middle">0.8</text>
+      <text x="303.3" y="372.6" text-anchor="middle">1.7</text>
+      <text x="403" y="369.2" text-anchor="end">3.4</text>
+      <text x="509.7" y="352.4" text-anchor="end">6.7</text>
+      <text x="616.3" y="318.8" text-anchor="end">13</text>
+      <text x="721" y="255.5" text-anchor="end">27</text>
+    </g>
+    <text x="578" y="328" style="fill:#71717a" text-anchor="end">KV-cache</text>
+    <text x="718" y="356" style="fill:#18181b" font-weight="600" text-anchor="end">85× smaller at V = 64</text>
+    <text x="718" y="380" style="fill:#4f7d00" font-weight="600" text-anchor="end">TTB fast weights</text>
+    <line x1="730" y1="263.5" x2="730" y2="380.4" stroke="#18181b" stroke-width="1.5" stroke-dasharray="3 3"></line>
   </svg>
 </ChartCard>
