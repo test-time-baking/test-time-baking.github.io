@@ -14,6 +14,11 @@
  * clicking the centred clip pauses and resumes it (a play badge shows while
  * paused), a thin progress line runs along its bottom edge, and clicking a
  * peeking neighbour brings it to the centre. Files live in /public.
+ *
+ * `layout="row"` (from 64rem up): three clips of equal size side by side inside
+ * the page frame, all three playing, as most project pages built on the Nerfies
+ * template show their results. A click on the middle clip pauses or resumes all
+ * three; a click on a side clip brings it to the middle.
  */
 interface Item {
   /** Path inside /public, e.g. "video/live-dl3dv-c.mp4". */
@@ -30,9 +35,15 @@ interface Props {
   items: Item[];
   /** One line under the dots. */
   caption?: string;
+  /**
+   * "row": from 64rem up, three clips of equal size side by side inside the page frame, all
+   * playing, the way the Nerfies template's results carousel does it. Narrower pages keep the
+   * default look (one clip centred, its neighbours peeking in).
+   */
+  layout?: "peek" | "row";
 }
 
-const { items, caption } = Astro.props;
+const { items, caption, layout = "peek" } = Astro.props;
 const n = items.length;
 
 // Real slides carry their index; the two clones carry the index they stand for.
@@ -46,7 +57,7 @@ const baseUrl = import.meta.env.BASE_URL;
 const prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
 ---
 
-<section class="clip-carousel full-bleed not-prose my-12 bg-zinc-100 py-8" data-stage>
+<section class:list={["clip-carousel full-bleed not-prose my-12 bg-zinc-100 py-8", layout === "row" && "is-row"]} data-stage>
   <div class="relative mx-auto max-w-[96rem] px-6 lg:px-10">
     {/* The track: snap-scrolling row. Its inline padding sets how much of the
         neighbours peeks in (slide width = 100% - 2 * padding). */}
@@ -131,6 +142,20 @@ const prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
 </section>
 
 <style>
+  /* "row" layout, from 64rem: the padding leaves one third of the frame (less the two
+     gaps) for a slide, so exactly three fit; all three look and play alike. */
+  @media (min-width: 64rem) {
+    .is-row .track {
+      padding-inline: calc(100% / 3 + 0.25rem);
+    }
+    .is-row .slide:not(.is-active) {
+      opacity: 1;
+      transform: none;
+    }
+    .is-row .slide:not(.is-active) .bar {
+      display: none;
+    }
+  }
   .slide {
     transition:
       opacity 0.3s ease,
@@ -165,6 +190,9 @@ const prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
     if (!track || slides.length < 3) return;
 
     const last = slides.length - 1; // DOM index of the trailing clone
+    // "row" layout on a wide page: the centred clip and its two neighbours all play.
+    const wide = window.matchMedia("(min-width: 64rem)");
+    const span = () => (root.classList.contains("is-row") && wide.matches ? 1 : 0);
     const realIndex = (d: number) => Number(slides[d].dataset.index);
     const isClone = (d: number) => slides[d].hasAttribute("data-clone");
 
@@ -205,6 +233,8 @@ const prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
         slides[k].classList.toggle("is-paused", active && userPaused);
         if (active && inView && !isClone(d) && !userPaused) {
           v.play().catch(() => {});
+        } else if (Math.abs(k - d) <= span() && inView && !isClone(d) && !userPaused) {
+          v.play().catch(() => {}); // a neighbour in the row
         } else {
           if (!v.paused) v.pause();
           if (Math.abs(k - d) === 1 && v.preload === "none") v.preload = "metadata";
@@ -217,10 +247,7 @@ const prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
     const togglePlay = () => {
       if (current < 0) return;
       userPaused = !userPaused;
-      slides[current].classList.toggle("is-paused", userPaused);
-      const v = videos[current];
-      if (userPaused) v.pause();
-      else v.play().catch(() => {});
+      activate(current); // the centred clip, and in the row layout its two neighbours
     };
     slides.forEach((slide, d) =>
       slide.addEventListener("click", () => {
@@ -285,12 +312,17 @@ const prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
       if (current >= 0) goTo(current, "instant");
     }).observe(track);
 
+    // Crossing 64rem switches the row layout on or off: update which clips play.
+    wide.addEventListener("change", () => {
+      if (current >= 0) activate(current);
+    });
+
     // Only play while the carousel is on screen.
     const io = new IntersectionObserver(
       (entries) => {
         inView = entries.some((en) => en.isIntersecting);
         if (inView) activate(nearest());
-        else if (current >= 0 && !videos[current].paused) videos[current].pause();
+        else videos.forEach((v) => !v.paused && v.pause());
       },
       { threshold: 0.25 },
     );
