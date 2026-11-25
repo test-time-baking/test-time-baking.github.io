@@ -57,7 +57,7 @@ const baseUrl = import.meta.env.BASE_URL;
 const prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
 ---
 
-<section class:list={["clip-carousel full-bleed not-prose my-12 bg-zinc-100 py-8", layout === "row" && "is-row"]} data-stage>
+<section class:list={["clip-carousel full-bleed not-prose my-12 bg-zinc-100 py-8", layout === "row" && "is-row", caption && "has-caption"]} data-stage>
   <div class="relative mx-auto max-w-[96rem] px-6 lg:px-10">
     {/* The track: snap-scrolling row. Its inline padding sets how much of the
         neighbours peeks in (slide width = 100% - 2 * padding). */}
@@ -154,6 +154,24 @@ const prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
     }
     .is-row .slide:not(.is-active) .bar {
       display: none;
+    }
+    /* The arrows sit on the two ends of the row, overhanging the outer clips a
+       little (as on pages built with the Nerfies template), and level with the
+       middle of the clips: 50% of the wrapper is 1.25rem too low, by half the
+       height of the dots under the row (and half the caption's, if there is one). */
+    .is-row .prev,
+    .is-row .next {
+      top: calc(50% - 1.25rem);
+    }
+    .is-row.has-caption .prev,
+    .is-row.has-caption .next {
+      top: calc(50% - 2.125rem);
+    }
+    .is-row .prev {
+      left: calc(2.5rem - 6px);
+    }
+    .is-row .next {
+      right: calc(2.5rem - 6px);
     }
   }
   .slide {

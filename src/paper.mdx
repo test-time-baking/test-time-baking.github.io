@@ -24,6 +24,7 @@ import ResultsTable from "./components/ResultsTable.astro";
 import QualityTable from "./components/QualityTable.astro";
 import VideoGallery from "./components/VideoGallery.astro";
 import LiveDemo from "./components/LiveDemo.astro";
+import StepCards from "./components/StepCards.astro";
 import SpeedCompare from "./components/SpeedCompare.astro";
 
 import figVariants from "./assets/figures/fig2-variants.png";
@@ -215,10 +216,22 @@ One mismatch remains. During reconstruction the MLP sees tokens that carry **ima
 The plots under each variant compare reconstruction and rendering tokens at blocks 1, 4 and 7. Only full TTB mixes the two from the first block; the other two keep them apart until late in the network.
 
 <Stage width="mid">
-  <Figure>
-    <Picture slot="figure" src={figVariants} alt="Three variants of the inner-loop optimisation and t-SNE plots of their token features" />
-    <Fragment slot="caption">Three ways to train the fast-weight MLP: (a) TTT, (b) TTB without context pairing, (c) full TTB.</Fragment>
-  </Figure>
+  {/* One heading card per panel of the figure below; the tracks follow the panels' dashed separators (33.3 % and 65 % of the image).
+      The wrapper pulls the figure up under the cards (a figure's own top margin is 2em). */}
+  <div class="[&>figure]:mt-3 [&>figure]:mb-0">
+    <StepCards
+      columns="33.3fr 31.7fr 35fr"
+      items={[
+        { title: "Before: TTT", label: "MLP target:", value: "its own value" },
+        { step: 1, title: "Attention target", label: "MLP target:", value: "attention output" },
+        { step: 2, title: "Context pairing", label: "MLP input:", value: "pose-only tokens" },
+      ]}
+    />
+    <Figure>
+      <Picture slot="figure" src={figVariants} alt="Three variants of the inner-loop optimisation and t-SNE plots of their token features" />
+      <Fragment slot="caption">Three ways to train the fast-weight MLP: (a) TTT, (b) TTB without context pairing, (c) full TTB.</Fragment>
+    </Figure>
+  </div>
 </Stage>
 
 <div class="max-sm:hidden">

@@ -1,0 +1,63 @@
+---
+/**
+ * A row of short heading cards that sits on top of a multi-panel figure, one
+ * card per panel: a title, and one line that names what changes in that panel.
+ * Cards with a `step` number are tinted green like EqCard's `ours` and carry
+ * the number in a green disc; a card without one is the plain "before" card.
+ * `columns` gives the panels' widths (CSS grid tracks, e.g. "33.3fr 31.7fr 35fr")
+ * so the cards line up with the figure's panels; below 40rem the cards stack.
+ */
+interface Item {
+  /** 1, 2, ... for a step of the method; leave out for the starting point. */
+  step?: number;
+  title: string;
+  /** Start of the second line, e.g. "MLP target:". */
+  label: string;
+  /** The emphasised end of the second line, e.g. "attention output". */
+  value: string;
+}
+
+interface Props {
+  items: Item[];
+  columns?: string;
+}
+
+const { items, columns } = Astro.props;
+const tracks = columns ?? items.map(() => "1fr").join(" ");
+---
+
+<div class="step-cards not-prose grid gap-3" style={`--tracks: ${tracks}`}>
+  {
+    items.map((it) => (
+      <div
+        class:list={[
+          "min-w-0 rounded-2xl border px-4 py-3",
+          it.step ? "border-nv bg-nv-soft" : "border-zinc-200 bg-white",
+        ]}
+      >
+        <div class="flex items-center gap-2.5">
+          {it.step && (
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-nv text-[15px] leading-none font-bold text-white">
+              {it.step}
+            </span>
+          )}
+          <span class:list={["text-[17px] leading-7 font-semibold", it.step ? "text-zinc-900" : "text-zinc-500"]}>
+            {it.title}
+          </span>
+        </div>
+        <p class="m-0 mt-1 text-sm leading-6 text-zinc-600">
+          {it.label}{" "}
+          <b class:list={["font-semibold", it.step ? "text-nv-ink" : "text-zinc-900"]}>{it.value}</b>
+        </p>
+      </div>
+    ))
+  }
+</div>
+
+<style>
+  @media (min-width: 40rem) {
+    .step-cards {
+      grid-template-columns: var(--tracks);
+    }
+  }
+</style>
