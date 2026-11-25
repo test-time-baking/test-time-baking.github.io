@@ -220,10 +220,24 @@ The plots under each variant compare reconstruction and rendering tokens at bloc
   </Figure>
 </Stage>
 
+<div class="max-sm:hidden">
+
 $$
 X^{(\text{ctx-gt})}_0 = \mathrm{LN}\big(\mathrm{PE}^{(\text{ray})}(P, K) + \mathrm{PE}^{(\text{rgb})}(I)\big), \qquad
 X^{(\text{ctx-rend})}_0 = \mathrm{LN}\big(\mathrm{PE}^{(\text{ray})}(P, K)\big)
 $$
+
+</div>
+<div class="eq-phone sm:hidden">
+
+$$
+\begin{gathered}
+X^{(\text{ctx-gt})}_0 = \mathrm{LN}\big(\mathrm{PE}^{(\text{ray})}(P, K) + \mathrm{PE}^{(\text{rgb})}(I)\big), \\
+X^{(\text{ctx-rend})}_0 = \mathrm{LN}\big(\mathrm{PE}^{(\text{ray})}(P, K)\big)
+\end{gathered}
+$$
+
+</div>
 
 Each TTB layer bakes the map $X^{(\text{ctx-rend})} \mapsto \mathrm{CrossAttn}(X^{(\text{ctx-gt})})$ and shares the baked MLP with the novel-view tokens, so both stages see the same modality. Reconstruction handles twice the tokens; rendering cost is unchanged.
 

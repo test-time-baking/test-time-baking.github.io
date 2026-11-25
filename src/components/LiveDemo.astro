@@ -120,6 +120,13 @@ const phoneAr = 1 / ((1 - 2 * BEZEL) / ratio(phoneAspect) + 2 * BEZEL);
   .clip.phone {
     width: min(100%, 19rem);
   }
+  /* On a phone the frame at 19rem is as tall as the screen. At 14rem the browser
+     window, the phone and the button under them fit one screen together. */
+  @media (width < 40rem) {
+    .clip.phone {
+      width: min(100%, 14rem);
+    }
+  }
   @media (min-width: 64rem) {
     .pair {
       flex-direction: row;

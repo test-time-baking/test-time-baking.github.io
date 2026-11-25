@@ -52,7 +52,7 @@ const best = {
 const bold = "font-bold text-zinc-900";
 ---
 
-<div class="not-prose my-6 overflow-hidden rounded-2xl border border-zinc-200">
+<div class="quality-table not-prose my-6 overflow-hidden rounded-2xl border border-zinc-200">
   <div class="flex flex-wrap items-center gap-3 border-b border-zinc-200 bg-zinc-100 px-3.5 py-2.5 text-sm">
     <b class="font-semibold text-zinc-900">{title}</b>
   </div>
@@ -61,7 +61,7 @@ const bold = "font-bold text-zinc-900";
       <thead>
         <tr class="text-[12.5px] text-zinc-600">
           <th class="px-3 py-2 text-left font-semibold">Method</th>
-          <th class="px-2 py-2 text-right font-semibold">Input views</th>
+          <th class="th-wrap px-2 py-2 text-right font-semibold">Input views</th>
           {hasTime && <th class="px-2 py-2 text-right font-semibold">Time ↓</th>}
           <th class="px-2 py-2 text-right font-semibold">PSNR ↑</th>
           <th class="px-2 py-2 text-right font-semibold">SSIM ↑</th>
@@ -82,7 +82,7 @@ const bold = "font-bold text-zinc-900";
                 <tr class:list={["border-t border-zinc-200", r.key && "bg-zinc-100"]}>
                   <td class:list={["px-3 py-1.5 text-left whitespace-nowrap", r.key && "font-semibold text-zinc-900"]}>
                     {r.method}
-                    {r.sub && <span class="ml-1.5 text-[11px] font-normal text-zinc-400">{r.sub}</span>}
+                    {r.sub && <span class="sub ml-1.5 text-[11px] font-normal text-zinc-400">{r.sub}</span>}
                   </td>
                   <td class="px-2 py-1.5 text-right">{r.views}</td>
                   {hasTime && (

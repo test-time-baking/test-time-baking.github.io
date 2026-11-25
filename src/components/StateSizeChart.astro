@@ -1,5 +1,15 @@
 ---
 import ChartCard from "./ChartCard.astro";
+
+// For the phone version of the chart (second <svg>): the points of the wide chart, x squeezed
+// into 58..331. The y values, labels and colours are the wide chart's own.
+const views = [1, 2, 4, 8, 16, 32, 64];
+const nx = (i: number) => 58 + 45.5 * i;
+const fpsY = [79.1, 104, 129.6, 151.3, 166.1, 175, 179.9];
+const fpsLabel = ["21", "16", "11", "6.7", "3.8", "2.0", "1.0"];
+const gbY = [387.9, 385.8, 381.6, 373.2, 356.4, 322.8, 255.5];
+const gbLabel = ["0.4", "0.8", "1.7", "3.4", "6.7", "13", "27"];
+const pts = (ys: number[]) => ys.map((y, i) => `${nx(i)},${y}`).join(" ");
 ---
 
 <ChartCard
@@ -7,6 +17,7 @@ import ChartCard from "./ChartCard.astro";
   subtitle="Speed measured on one A100 GPU."
 >
   <svg
+    class="max-sm:hidden!"
     viewBox="0 0 760 438"
     role="img"
     aria-label="Two panels over 1 to 64 input views. Render speed: the KV-cache falls from 21 fps at 1 view to 1 fps at 64 views while TTB stays at 24 fps. Scene state size: the KV-cache grows linearly to 27 GB at 64 views while TTB stays at 0.3 GB"
@@ -112,5 +123,69 @@ import ChartCard from "./ChartCard.astro";
     <text x="718" y="356" style="fill:#18181b" font-weight="600" text-anchor="end">85× smaller at V = 64</text>
     <text x="718" y="380" style="fill:#4f7d00" font-weight="600" text-anchor="end">TTB fast weights</text>
     <line x1="730" y1="263.5" x2="730" y2="380.4" stroke="#18181b" stroke-width="1.5" stroke-dasharray="3 3"></line>
+  </svg>
+
+  {/* Phone version (below 40rem): the same numbers on a 340-unit canvas, so the 12-unit
+      text stays readable at a phone's width. Same heights as the chart above. */}
+  <svg
+    class="sm:hidden!"
+    viewBox="0 0 340 438"
+    role="img"
+    aria-label="Two panels over 1 to 64 input views. Render speed: the KV-cache falls from 21 fps at 1 view to 1 fps at 64 views while TTB stays at 24 fps. Scene state size: the KV-cache grows linearly to 27 GB at 64 views while TTB stays at 0.3 GB"
+  >
+    <text x="48" y="18" style="fill:#18181b" font-weight="600">Render speed</text>
+    <g stroke="#e4e4e7">
+      <line x1="48" y1="35" x2="48" y2="185"></line>
+      <line x1="48" y1="185" x2="336" y2="185"></line>
+      <line x1="48" y1="135" x2="336" y2="135" stroke-dasharray="3 4"></line>
+      <line x1="48" y1="85" x2="336" y2="85" stroke-dasharray="3 4"></line>
+      <line x1="48" y1="35" x2="336" y2="35" stroke-dasharray="3 4"></line>
+    </g>
+    <text x="42" y="189" text-anchor="end">0 fps</text>
+    <text x="42" y="139" text-anchor="end">10 fps</text>
+    <text x="42" y="89" text-anchor="end">20 fps</text>
+    <text x="42" y="39" text-anchor="end">30 fps</text>
+    <polyline fill="none" stroke="#a1a1aa" stroke-width="2.5" points={pts(fpsY)}></polyline>
+    <g fill="#a1a1aa">{fpsY.map((y, i) => <circle cx={nx(i)} cy={y} r="4"></circle>)}</g>
+    <polyline fill="none" stroke="#76B900" stroke-width="3" points={`${nx(0)},62.9 ${nx(6)},62.9`}></polyline>
+    <g fill="#76B900">{fpsY.map((_, i) => <circle cx={nx(i)} cy="62.9" r="4"></circle>)}</g>
+    <g style="fill:#71717a">
+      <text x={nx(0)} y={fpsY[0] + 19} text-anchor="middle">{fpsLabel[0]}</text>
+      {[1, 2, 3, 4].map((i) => <text x={nx(i) - 6} y={fpsY[i] + 14} text-anchor="end">{fpsLabel[i]}</text>)}
+      <text x={nx(5)} y="166" text-anchor="middle">{fpsLabel[5]}</text>
+      <text x="338" y="170.9" text-anchor="end">{fpsLabel[6]}</text>
+    </g>
+    <text x={nx(1) + 12} y="99" style="fill:#71717a">KV-cache</text>
+    <text x="326" y="52.9" style="fill:#4f7d00" font-weight="600" text-anchor="end">TTB fast weights</text>
+    <text x="323" y="122" style="fill:#18181b" font-weight="600" text-anchor="end">over 23× faster at V = 64</text>
+    <line x1={nx(6)} y1="70.9" x2={nx(6)} y2="157.9" stroke="#18181b" stroke-width="1.5" stroke-dasharray="3 3"></line>
+
+    <text x="48" y="223" style="fill:#18181b" font-weight="600">Scene state size</text>
+    <g stroke="#e4e4e7">
+      <line x1="48" y1="240" x2="48" y2="390"></line>
+      <line x1="48" y1="390" x2="336" y2="390"></line>
+      <line x1="48" y1="340" x2="336" y2="340" stroke-dasharray="3 4"></line>
+      <line x1="48" y1="290" x2="336" y2="290" stroke-dasharray="3 4"></line>
+      <line x1="48" y1="240" x2="336" y2="240" stroke-dasharray="3 4"></line>
+    </g>
+    <text x="42" y="394" text-anchor="end">0 GB</text>
+    <text x="42" y="344" text-anchor="end">10 GB</text>
+    <text x="42" y="294" text-anchor="end">20 GB</text>
+    <text x="42" y="244" text-anchor="end">30 GB</text>
+    <g text-anchor="middle">{views.map((v, i) => <text x={nx(i)} y="413">{v}</text>)}</g>
+    <text x="192" y="431" text-anchor="middle">number of input views V</text>
+    <polyline fill="none" stroke="#a1a1aa" stroke-width="2.5" points={pts(gbY)}></polyline>
+    <g fill="#a1a1aa">{gbY.map((y, i) => <circle cx={nx(i)} cy={y} r="4"></circle>)}</g>
+    <polyline fill="none" stroke="#76B900" stroke-width="3" points={`${nx(0)},388.4 ${nx(6)},388.4`}></polyline>
+    <g fill="#76B900">{gbY.map((_, i) => <circle cx={nx(i)} cy="388.4" r="4"></circle>)}</g>
+    <g style="fill:#71717a">
+      {[0, 1, 2].map((i) => <text x={nx(i)} y={gbY[i] - 9} text-anchor="middle">{gbLabel[i]}</text>)}
+      {[3, 4, 5].map((i) => <text x={nx(i) - 7} y={gbY[i] - 4} text-anchor="end">{gbLabel[i]}</text>)}
+      <text x={nx(6) - 9} y={gbY[6]} text-anchor="end">{gbLabel[6]}</text>
+    </g>
+    <text x={nx(5) - 22} y="333" style="fill:#71717a" text-anchor="end">KV-cache</text>
+    <text x="300" y="270" style="fill:#18181b" font-weight="600" text-anchor="end">85× smaller at V = 64</text>
+    <text x="323" y="380" style="fill:#4f7d00" font-weight="600" text-anchor="end">TTB fast weights</text>
+    <line x1={nx(6)} y1="263.5" x2={nx(6)} y2="380.4" stroke="#18181b" stroke-width="1.5" stroke-dasharray="3 3"></line>
   </svg>
 </ChartCard>

@@ -116,7 +116,7 @@ const prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
         items.map((it, i) => (
           <button
             type="button"
-            class="dot group flex h-6 w-5 items-center justify-center"
+            class="dot group flex h-6 w-5 items-center justify-center max-sm:h-9 max-sm:w-7"
             role="tab"
             aria-label={it.label}
             aria-selected={i === 0 ? "true" : "false"}

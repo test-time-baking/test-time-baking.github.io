@@ -122,6 +122,68 @@ main table :is(th, td) {
   white-space: nowrap;
 }
 
+/* ---- Phones: pages narrower than Tailwind's sm (40rem). Nothing here applies from 40rem up. ---- */
+@media (width < 40rem) {
+  /* Tables: a little smaller and tighter, so the two component tables show every
+     column without sideways scrolling. */
+  main .prose table,
+  .prose main table,
+  main table,
+  main table thead tr {
+    font-size: min(11.5px, 3.05vw); /* the vw terms: still fits on a 360 px screen */
+  }
+  main table :is(th, td) {
+    padding-inline: min(4px, 0.9vw);
+  }
+  main :is(.results-table, .quality-table) :is(th, td):first-child {
+    padding-left: 0.5rem;
+  }
+  main :is(.results-table, .quality-table) :is(th, td):last-child {
+    padding-right: 0.5rem;
+  }
+  main :is(.results-table, .quality-table) thead th {
+    vertical-align: bottom;
+  }
+  /* the small grey text after a method name (venue, model name) goes under it */
+  main :is(.results-table, .quality-table) .sub {
+    display: block;
+    margin-left: 0;
+    font-size: 10.5px;
+    line-height: 1.25;
+  }
+  /* the group labels of the Motivation table may wrap, and so may its one two-word header */
+  main .quality-table :is(td[colspan], th.th-wrap) {
+    white-space: normal;
+  }
+
+  /* Markdown tables that are still too wide scroll sideways: the first column stays
+     put, and a soft shadow on the right edge shows there is more (it goes away at
+     the end of the scroll). */
+  main .md-table {
+    background:
+      linear-gradient(to left, #fff 40%, rgb(255 255 255 / 0)) right center / 2.5rem 100% no-repeat local,
+      radial-gradient(farthest-side at 100% 50%, rgb(0 0 0 / 0.2), rgb(0 0 0 / 0)) right center / 0.9rem 100%
+        no-repeat scroll;
+  }
+  main .md-table :is(th, td):first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: #fff;
+    padding-right: 8px;
+    box-shadow: 5px 0 6px -4px rgb(0 0 0 / 0.18);
+  }
+
+  /* The two-line form of the long display equation: sized with the page like the
+     equations in the cards, without the side padding, so it fits. */
+  main .eq-phone .katex {
+    font-size: min(1.21em, 3.8vw);
+  }
+  main .eq-phone .katex-display > .katex > .katex-html {
+    padding-inline: 0;
+  }
+}
+
 /* Keep anchored headings clear of the sticky top bar. */
 main :is(h2, h3, h4) {
   scroll-margin-top: 5.5rem;

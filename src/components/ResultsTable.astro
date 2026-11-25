@@ -55,7 +55,7 @@ const bestRecon = (rows: Row[]) => {
             type="button"
             data-key={s.key}
             class:list={[
-              "rounded-full px-3 py-1 text-[13px] font-medium",
+              "rounded-full px-3 py-1 text-[13px] font-medium max-sm:py-2",
               s.key === defaultKey ? "bg-zinc-900 text-white" : "text-zinc-600 hover:text-zinc-900",
             ]}
           >
@@ -93,7 +93,7 @@ const bestRecon = (rows: Row[]) => {
                   <tr class:list={["border-t border-zinc-200", r.ours && "bg-nv-soft"]}>
                     <td class:list={["px-3 py-1.5 text-left whitespace-nowrap", r.ours && "font-semibold text-nv-ink"]}>
                       {r.method}
-                      {r.venue && <span class="ml-1.5 text-[11px] font-normal text-zinc-400">{r.venue}</span>}
+                      {r.venue && <span class="sub ml-1.5 text-[11px] font-normal text-zinc-400">{r.venue}</span>}
                     </td>
                     <td class:list={["px-2 py-1.5 text-right", r.psnr !== undefined && r.psnr === bP && "font-bold text-zinc-900"]}>{fmt(r.psnr, 2)}</td>
                     <td class:list={["px-2 py-1.5 text-right", r.ssim !== undefined && r.ssim === bS && "font-bold text-zinc-900"]}>{fmt(r.ssim, 3)}</td>
