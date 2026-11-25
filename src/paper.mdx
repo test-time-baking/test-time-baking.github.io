@@ -25,10 +25,9 @@ import QualityTable from "./components/QualityTable.astro";
 import VideoGallery from "./components/VideoGallery.astro";
 import LiveDemo from "./components/LiveDemo.astro";
 import StepCards from "./components/StepCards.astro";
+import FigSvg from "./components/FigSvg.astro";
 import SpeedCompare from "./components/SpeedCompare.astro";
 
-import figVariants from "./assets/figures/fig2-variants.png";
-import figPipeline from "./assets/figures/fig3-pipeline.png";
 
 <TeaserVideo
   video="video/ttb-teaser.mp4"
@@ -220,7 +219,7 @@ The plots under each variant compare reconstruction and rendering tokens at bloc
       The wrapper pulls the figure up under the cards (a figure's own top margin is 2em). */}
   <div class="[&>figure]:mt-3 [&>figure]:mb-0">
     <StepCards
-      columns="33.3fr 31.7fr 35fr"
+      columns="32.5fr 33.35fr 34.15fr"
       items={[
         { title: "Before: TTT", label: "MLP target:", value: "its own value" },
         { step: 1, title: "Attention target", label: "MLP target:", value: "attention output" },
@@ -228,7 +227,7 @@ The plots under each variant compare reconstruction and rendering tokens at bloc
       ]}
     />
     <Figure>
-      <Picture slot="figure" src={figVariants} alt="Three variants of the inner-loop optimisation and t-SNE plots of their token features" />
+      <FigSvg slot="figure" name="fig2-variants" />
       <Fragment slot="caption">Three ways to train the fast-weight MLP: (a) TTT, (b) TTB without context pairing, (c) full TTB.</Fragment>
     </Figure>
   </div>
@@ -257,7 +256,7 @@ Each TTB layer bakes the map $X^{(\text{ctx-rend})} \mapsto \mathrm{CrossAttn}(X
 
 <Stage width="mid">
   <Figure>
-    <Picture slot="figure" src={figPipeline} alt="TTB pipeline: intra-view attention, FFN, test-time baking layer and FFN, repeated L times" />
+    <FigSvg slot="figure" name="fig3-pipeline" />
     <Fragment slot="caption">**Pipeline.** Each block: intra-view attention, FFN, TTB layer, FFN. Reconstruction bakes the fast-weight MLP once per scene; rendering retrieves scene information from it in $O(1)$. The rendering loss back-propagates through the baking, so training is end to end.</Fragment>
   </Figure>
 </Stage>

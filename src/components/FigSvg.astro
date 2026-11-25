@@ -1,0 +1,37 @@
+---
+/**
+ * A paper figure drawn on the page as real SVG: boxes, arrows and live text
+ * in the page's own font, so it stays sharp at any size. Photos and plots
+ * inside the figure are small WebP files in public/img/fig.
+ *
+ * `name` is a file in src/assets/figures (without ".svg") made by
+ * tools/figsvg/pptx_to_svg.py from the figure's PowerPoint slide. The file
+ * names no font: text takes the page's font, math runs (class "m") take
+ * KaTeX's math italic so they match the equations around the figure.
+ */
+interface Props {
+  name: string;
+}
+
+const { name } = Astro.props;
+const files = import.meta.glob<string>("../assets/figures/*.svg", { query: "?raw", import: "default", eager: true });
+const raw = files[`../assets/figures/${name}.svg`];
+if (!raw) throw new Error(`FigSvg: no src/assets/figures/${name}.svg`);
+const svg = raw.replaceAll("{BASE}", `${import.meta.env.BASE_URL}img/fig/`);
+---
+
+<div class="fig-svg w-full" set:html={svg} />
+
+<style is:global>
+  .fig-svg > svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  .fig-svg text {
+    font-family: inherit;
+  }
+  .fig-svg .m {
+    font-family: KaTeX_Math, "Times New Roman", serif;
+  }
+</style>
