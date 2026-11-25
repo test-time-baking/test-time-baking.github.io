@@ -12,16 +12,22 @@ interface Props {
   labName: string;
   labUrl: string;
   links?: NavLink[];
+  /** Call-to-action pill at the right end of the bar, e.g. { label: "Try TTB", href: "<the demo>" }. Opens in a new tab.
+   *  Shown from 40rem up; a phone's bar has no room for it and stays as it is. */
+  cta?: NavLink;
 }
 
-const { labName, labUrl, links = [] } = Astro.props;
+const { labName, labUrl, links = [], cta } = Astro.props;
 
 const baseUrl = import.meta.env.BASE_URL;
 const prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
 ---
 
 <nav
-  class="site-nav not-prose sticky top-0 z-30 w-full border-b border-zinc-200 bg-white/95 backdrop-blur"
+  class:list={[
+    "site-nav not-prose sticky top-0 z-30 w-full border-b border-zinc-200 bg-white/95 backdrop-blur",
+    cta && "has-cta",
+  ]}
 >
   <div
     class="mx-auto flex h-16 w-full max-w-[96rem] items-center gap-3 px-6 lg:px-10"
@@ -58,5 +64,32 @@ const prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
         </div>
       )
     }
+    {
+      cta && (
+        <a
+          href={cta.href}
+          target="_blank"
+          rel="noopener"
+          class:list={[
+            "nav-cta inline-flex shrink-0 items-center gap-1.5 rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium whitespace-nowrap text-white no-underline transition-colors hover:bg-black max-sm:hidden",
+            links.length > 0 ? "ml-auto lg:ml-6" : "ml-auto",
+          ]}
+        >
+          <span>{cta.label}</span>
+          <svg viewBox="0 0 24 24" class="h-[0.9em] w-[0.9em]" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M7 17 17 7M8.5 7H17v8.5" />
+          </svg>
+        </a>
+      )
+    }
   </div>
 </nav>
+
+<style>
+  /* Just above the phone range the two names and the pill need tighter gaps to stay on one line. */
+  @media (40rem <= width < 42rem) {
+    .has-cta > div {
+      gap: 0.5rem;
+    }
+  }
+</style>

@@ -63,6 +63,7 @@ const site = Astro.site ? new URL(prefix, Astro.site).href : undefined;
     <NvidiaNav
       labName="NVIDIA Research Taiwan"
       labUrl="https://research.nvidia.com/labs/twn/"
+      cta={{ label: "Try TTB", href: "https://huggingface.co/spaces/nvidia/DVSM" }}
     />
     <Toc paperUrl={paperUrl} />
     <div
