@@ -2,6 +2,11 @@
 /**
  * Screen recording of the live demo (the Hugging Face Space: its Gradio page with
  * the viser viewer) and a link to open it. Video and poster live in /public.
+ *
+ * With `browserBar` the recording sits in a browser window: the bar is a picture of
+ * a real browser's tab strip and toolbar, the recording is the page under it.
+ * With `phoneVideo` a second recording, made on a phone and showing the phone's
+ * whole screen, stands beside it in a phone frame.
  */
 import { Icon } from "astro-icon/components";
 
@@ -16,25 +21,74 @@ interface Props {
   caption?: string;
   /** Aspect ratio of the recording, as CSS (e.g. "16 / 10"). */
   aspect?: string;
+  /** Picture of a browser's top bar (path inside /public), as wide as the window. */
+  browserBar?: string;
+  /** Its aspect ratio, as CSS (e.g. "3104 / 174"). */
+  browserBarAspect?: string;
+  /** Second recording, made on a phone (the whole screen, portrait). Right of the first at the same height; below it on narrow pages. */
+  phoneVideo?: string;
+  phonePoster?: string;
+  phoneAspect?: string;
 }
 
-const { video, poster, href, label = "Open the demo on Hugging Face", caption, aspect = "16 / 9" } = Astro.props;
+const {
+  video,
+  poster,
+  href,
+  label = "Open the demo on Hugging Face",
+  caption,
+  aspect = "16 / 9",
+  browserBar,
+  browserBarAspect = "3104 / 174",
+  phoneVideo,
+  phonePoster,
+  phoneAspect = "9 / 19.5",
+} = Astro.props;
 const baseUrl = import.meta.env.BASE_URL;
 const prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
+/** "1496 / 794" -> 1.884 */
+const ratio = (css: string) => {
+  const [w, h] = css.split("/").map((v) => Number(v.trim()));
+  return h ? w / h : w;
+};
+// Outer shapes. In a row, widths in proportion to these give both blocks the same height.
+// Browser window: the bar on top of the recording, both as wide as the window.
+const desktopAr = browserBar ? 1 / (1 / ratio(browserBarAspect) + 1 / ratio(aspect)) : ratio(aspect);
+// Phone: a bezel of BEZEL x its width all round the screen (keep in step with --bezel below).
+const BEZEL = 0.026;
+const phoneAr = 1 / ((1 - 2 * BEZEL) / ratio(phoneAspect) + 2 * BEZEL);
 ---
 
 <figure class="live-demo not-prose my-0">
-  <div class="relative overflow-hidden rounded-[20px] bg-white ring-1 ring-black/10" style={`aspect-ratio: ${aspect}`}>
-    <video
-      class="h-full w-full object-cover"
-      src={prefix + video}
-      poster={prefix + poster}
-      autoplay
-      muted
-      loop
-      playsinline
-      controls
-      preload="metadata"></video>
+  <div class="pair">
+    <div class:list={["clip", browserBar ? "browser" : "plain"]} style={`aspect-ratio: ${desktopAr.toFixed(4)}; --ar: ${desktopAr.toFixed(4)}`}>
+      <div class="window">
+        {browserBar && <img class="bar" src={prefix + browserBar} alt="" decoding="async" />}
+        <div class="screen">
+          <video src={prefix + video} poster={prefix + poster} autoplay muted loop playsinline controls preload="metadata"></video>
+        </div>
+      </div>
+    </div>
+    {
+      phoneVideo && (
+        <div class="clip phone" style={`aspect-ratio: ${phoneAr.toFixed(4)}; --ar: ${phoneAr.toFixed(4)}`}>
+          <div class="body">
+            <div class="screen">
+              <video
+                src={prefix + phoneVideo}
+                poster={phonePoster ? prefix + phonePoster : undefined}
+                autoplay
+                muted
+                loop
+                playsinline
+                controls
+                preload="metadata"
+              />
+            </div>
+          </div>
+        </div>
+      )
+    }
   </div>
   <figcaption class="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
     {caption && <p class="m-0 max-w-[44rem] text-[0.95rem] leading-6 text-zinc-600">{caption}</p>}
@@ -49,3 +103,93 @@ const prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
     </a>
   </figcaption>
 </figure>
+
+<style>
+  /* One block, or desktop + phone: stacked on narrow pages, one row of equal height from 64rem. */
+  .pair {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.75rem;
+  }
+  .clip {
+    width: 100%;
+    /* the frames below are sized in cqw = 1 % of this block's width, so they scale with it */
+    container-type: inline-size;
+  }
+  .clip.phone {
+    width: min(100%, 19rem);
+  }
+  @media (min-width: 64rem) {
+    .pair {
+      flex-direction: row;
+      align-items: stretch;
+    }
+    .clip,
+    .clip.phone {
+      width: auto;
+      min-width: 0;
+      flex: var(--ar) 1 0%;
+    }
+  }
+  video {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* Plain: the recording in a rounded card (no browser bar given). */
+  .plain .window {
+    height: 100%;
+    overflow: hidden;
+    border-radius: 20px;
+    background: #fff;
+    box-shadow: 0 0 0 1px rgb(0 0 0 / 0.1);
+  }
+  .plain .screen {
+    height: 100%;
+  }
+
+  /* Browser window: corner radius of the captured window (26 px at 1552 px wide). */
+  .browser .window {
+    display: flex;
+    height: 100%;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 1.7cqw;
+    background: #fff;
+    box-shadow:
+      0 0 0 1px rgb(0 0 0 / 0.14),
+      0 1.6cqw 3.6cqw -1.6cqw rgb(0 0 0 / 0.28);
+  }
+  .browser .bar {
+    display: block;
+    width: 100%;
+    height: auto;
+    flex: none;
+  }
+  .browser .screen {
+    min-height: 0;
+    flex: 1 1 0%;
+  }
+
+  /* Phone: a dark bezel round the recorded screen; the screen's corners as on the device. */
+  .phone .body {
+    --bezel: 2.6cqw;
+    height: 100%;
+    padding: var(--bezel);
+    border-radius: 16cqw;
+    background: #0d0d0f;
+    box-shadow:
+      0 0 0 1px rgb(0 0 0 / 0.5),
+      inset 0 0 0 0.5cqw #2b2b2f,
+      0 3cqw 7cqw -3cqw rgb(0 0 0 / 0.35);
+  }
+  .phone .screen {
+    height: 100%;
+    overflow: hidden;
+    border-radius: 13.4cqw;
+    background: #000;
+  }
+</style>
